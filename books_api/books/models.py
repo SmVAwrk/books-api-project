@@ -11,11 +11,7 @@ class Books(models.Model):
     title = models.CharField(verbose_name='Название', max_length=255)
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
-    # page_count = models.PositiveSmallIntegerField(verbose_name='Количество страниц')
-    # publication_date = models.DateField(verbose_name='Дата публикации')
-    # publisher = models.CharField(verbose_name='Издательство', max_length=64)
     categories = models.ManyToManyField('Categories', verbose_name='Категории', blank=True, related_name='cat_books')
-    # libraries = models.ManyToManyField('Libraries', verbose_name='Наличие в бибилотеках', related_name='lib_books')
     owner_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
