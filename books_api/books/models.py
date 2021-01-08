@@ -12,8 +12,11 @@ class Books(models.Model):
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
     categories = models.ManyToManyField('Categories', verbose_name='Категории', blank=True, related_name='cat_books')
-    owner_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title
@@ -25,8 +28,15 @@ class Authors(models.Model):
     middle_name = models.CharField(verbose_name='Отчество', max_length=64, blank=True, null=True)
     last_name = models.CharField(verbose_name='Фамилия', max_length=64)
 
+    def get_name(self):
+        name = (f'{self.first_name[0]}. {self.middle_name[0]}. {self.last_name}'
+                     if self.middle_name else f'{self.first_name[0]}. {self.last_name}')
+        return name
+
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        full_name = (f'{self.first_name} {self.middle_name} {self.last_name}'
+                     if self.middle_name else f'{self.first_name} {self.last_name}')
+        return full_name
 
 
 class Categories(models.Model):

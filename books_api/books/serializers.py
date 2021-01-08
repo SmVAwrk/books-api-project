@@ -3,16 +3,19 @@ from rest_framework import serializers
 from books.models import Books, Authors, Categories, Libraries
 
 
-class BooksListSerializer(serializers.ModelSerializer):
+class BooksListSerializer(serializers.HyperlinkedModelSerializer):
+    author = serializers.CharField(source='author.get_name')
+    url = serializers.HyperlinkedIdentityField(view_name='book-detail', read_only=True)
+
     class Meta:
         model = Books
-        fields = ('id', 'title', 'author')
+        fields = ('title', 'author', 'url',)
 
 
 class BooksDetailSerializer(serializers.ModelSerializer):
-    owner_user = serializers.ReadOnlyField(source='owner_user.username')
-    author = serializers.CharField(source='author.last_name')
-    # categories = serializers.ListField()
+    owner = serializers.ReadOnlyField(source='owner.username')
+    author = serializers.PrimaryKeyRelatedField(label='Автор', queryset=Authors.objects.all(), source='author.__str__')
+    # categories = serializers.ManyRelatedField(child_relation=Categories.objects.book.all())
 
     class Meta:
         model = Books

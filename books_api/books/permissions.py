@@ -7,5 +7,5 @@ class IsAuthorOrAdminOrReadOnly(BasePermission):
         return bool(
             request.method in SAFE_METHODS or
             request.user and
-            request.user.is_authenticated and (request.user == obj.owner_user or request.user.is_staff)
+            request.user.is_authenticated and (request.user == obj.owner or request.user.is_staff)
         )
