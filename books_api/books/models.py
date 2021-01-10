@@ -27,10 +27,15 @@ class Authors(models.Model):
     first_name = models.CharField(verbose_name='Имя', max_length=64)
     middle_name = models.CharField(verbose_name='Отчество', max_length=64, blank=True, null=True)
     last_name = models.CharField(verbose_name='Фамилия', max_length=64)
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
+    description = models.TextField(verbose_name='Описание', blank=True, null=True)
+
+    class Meta:
+        ordering = ['last_name']
 
     def get_name(self):
         name = (f'{self.first_name[0]}. {self.middle_name[0]}. {self.last_name}'
-                     if self.middle_name else f'{self.first_name[0]}. {self.last_name}')
+                if self.middle_name else f'{self.first_name[0]}. {self.last_name}')
         return name
 
     def __str__(self):
@@ -42,6 +47,7 @@ class Authors(models.Model):
 class Categories(models.Model):
     """Модель книжных категорий"""
     title = models.CharField(verbose_name='Название', max_length=255)
+    description = models.TextField(verbose_name='Описание', blank=True, null=True)
 
     def __str__(self):
         return self.title
