@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -63,12 +64,16 @@ class Libraries(models.Model):
         return self.title
 
 
-class BookLibraryQuantity(models.Model):
+class BookLibraryAvailable(models.Model):
     """Модель связи определенной книги с определенной библиотекой"""
-    book = models.ForeignKey(Books, on_delete=models.CASCADE, verbose_name='Книга')
-    library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
-    quantity = models.PositiveSmallIntegerField(verbose_name='Количество книг')
-    available = models.PositiveSmallIntegerField(verbose_name='Доступно книг')
+    book = models.ForeignKey(Books, on_delete=models.CASCADE, verbose_name='Книга', related_name='lib_available')
+    library = models.ForeignKey(Libraries, on_delete=models.CASCADE,
+                                verbose_name='Библиотека', related_name='book_available')
+    available = models.BooleanField(verbose_name='В наличии')
+
+    class Meta:
+        ordering = ('book', 'library')
+        unique_together = ('book', 'library')
 
     def __str__(self):
         return f'Связь {self.book} с {self.library}'
@@ -76,7 +81,7 @@ class BookLibraryQuantity(models.Model):
 
 class UserBookSession(models.Model):
     """Модель заявки пользовтаеля на сессию с книгой"""
-    book = models.ForeignKey(Books, on_delete=models.CASCADE, verbose_name='Книга')
+    books = models.ManyToManyField(Books, verbose_name='Книги', blank=True, related_name='session_books')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
     start_date = models.DateField(verbose_name='Дата начала пероида')
@@ -84,8 +89,31 @@ class UserBookSession(models.Model):
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
 
+    class Meta:
+        ordering = ('user', 'library')
+
+
     def __str__(self):
-        return f'Сессия {self.user} с {self.book} из {self.library}'
+        return f'Сессия {self.user} с {self.books} из {self.library}'
+
+    # def save(self, *args, **kwargs):
+    #     old_accepted = self.is_accepted
+    #     old_closed = self.is_closed
+    #     super().save(*args, **kwargs)
+    #     new_accepted = self.is_accepted
+    #     new_closed = self.is_closed
+    #     if old_accepted != new_accepted:
+    #         book_library_relation = BookLibraryQuantity.objects.get(book=self.book,
+    #                                                                 library=self.library)
+    #         book_library_relation.available = F('available') - 1
+    #         book_library_relation.save()
+    #         book_library_relation.refresh_from_db()
+    #     if old_closed != new_closed:
+    #         book_library_relation = BookLibraryQuantity.objects.get(book=self.book,
+    #                                                                 library=self.library)
+    #         book_library_relation.available = F('available') + 1
+    #         book_library_relation.save()
+    #         book_library_relation.refresh_from_db()
 
 
 class UserBookOffer(models.Model):
