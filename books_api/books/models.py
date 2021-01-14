@@ -13,7 +13,6 @@ class Books(models.Model):
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
     categories = models.ManyToManyField('Categories', verbose_name='Категории', blank=True, related_name='cat_books')
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     class Meta:
@@ -28,7 +27,6 @@ class Authors(models.Model):
     first_name = models.CharField(verbose_name='Имя', max_length=64)
     middle_name = models.CharField(verbose_name='Отчество', max_length=64, blank=True, null=True)
     last_name = models.CharField(verbose_name='Фамилия', max_length=64)
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='Кем добавлено')
     description = models.TextField(verbose_name='Описание', blank=True, null=True)
 
     class Meta:
@@ -84,17 +82,16 @@ class UserBookSession(models.Model):
     books = models.ManyToManyField(Books, verbose_name='Книги', blank=True, related_name='session_books')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
-    start_date = models.DateField(verbose_name='Дата начала пероида')
-    end_date = models.DateField(verbose_name='Дата конца периода')
+    start_date = models.DateField(verbose_name='Дата, когда заберут книги')
+    end_date = models.DateField(verbose_name='Дата, когда вернут книги')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
 
     class Meta:
-        ordering = ('user', 'library')
-
+        ordering = ('is_closed', 'is_accepted', 'user', 'library')
 
     def __str__(self):
-        return f'Сессия {self.user} с {self.books} из {self.library}'
+        return f'Сессия {self.user} в {self.library}'
 
     # def save(self, *args, **kwargs):
     #     old_accepted = self.is_accepted
@@ -117,19 +114,20 @@ class UserBookSession(models.Model):
 
 
 class UserBookOffer(models.Model):
-    """Модель предложения книги пользователем"""
+    """Модель предложения книг пользователем"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
-    book = models.ForeignKey(Books, on_delete=models.CASCADE, verbose_name='Книга')
+    quantity = models.PositiveSmallIntegerField(verbose_name='Кол-во книг')
+    books_description = models.TextField(verbose_name='Описание книг')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
 
     def __str__(self):
-        return f'Предложение {self.user} книги {self.book} в {self.library}'
+        return f'Предложение {self.user} книг в {self.library}'
 
 
 class UserBookRelation(models.Model):
-    """Модель отношения пользователя к книги"""
+    """Модель отношения пользователя и книги"""
     RATE = (
         (1, 'Плохо'),
         (2, 'Так себе'),
@@ -149,7 +147,7 @@ class UserBookRelation(models.Model):
 
 class Profile(models.Model):
     """Расширение модели User"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='prof')
     phone_number = models.CharField(verbose_name='Телефон', max_length=64, blank=True)
     birth_date = models.DateField(verbose_name='Дата рождения', null=True, blank=True)
     books_donated = models.PositiveIntegerField(verbose_name='Отдано книг', default=0)
