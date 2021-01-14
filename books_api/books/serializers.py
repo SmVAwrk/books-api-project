@@ -3,7 +3,7 @@ import datetime
 from rest_framework import serializers
 
 from books.models import Books, Authors, Categories, Libraries, BookLibraryAvailable, UserBookSession, User, \
-    UserBookRelation, Profile
+    UserBookRelation
 
 
 class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):

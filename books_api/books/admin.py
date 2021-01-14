@@ -8,7 +8,6 @@ admin.site.register(Libraries)
 admin.site.register(BookLibraryAvailable)
 admin.site.register(UserBookSession)
 admin.site.register(UserBookRelation)
-admin.site.register(Profile)
 admin.site.register(UserBookOffer)
 
 

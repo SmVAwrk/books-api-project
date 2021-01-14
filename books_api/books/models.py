@@ -145,25 +145,4 @@ class UserBookRelation(models.Model):
         return f'Отношение {self.user} к {self.book}'
 
 
-class Profile(models.Model):
-    """Расширение модели User"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='prof')
-    phone_number = models.CharField(verbose_name='Телефон', max_length=64, blank=True)
-    birth_date = models.DateField(verbose_name='Дата рождения', null=True, blank=True)
-    books_donated = models.PositiveIntegerField(verbose_name='Отдано книг', default=0)
-
-    def __str__(self):
-        return f'Профиль {self.user}'
-
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
-
 
