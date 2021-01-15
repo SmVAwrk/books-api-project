@@ -3,7 +3,7 @@ import datetime
 from rest_framework import serializers
 
 from books.models import Books, Authors, Categories, Libraries, BookLibraryAvailable, UserBookSession, User, \
-    UserBookRelation
+    UserBookRelation, UserBookOffer
 
 
 class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
@@ -168,7 +168,7 @@ class MyBooksSessionDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookSession
-        fields = ('user', 'library', 'books', 'start_date', 'end_date', 'is_accepted', 'is_closed')
+        fields = ('user', 'library', 'books', 'start_date', 'end_date', 'is_accepted', 'is_closed', 'created_at')
 
 
 class MyBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
@@ -178,7 +178,7 @@ class MyBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = UserBookSession
-        fields = ('user', 'library', 'is_accepted', 'is_closed', 'url')
+        fields = ('user', 'library', 'is_accepted', 'is_closed', 'created_at', 'url')
 
 
 class BooksLibrariesAvailableListSerializer(serializers.HyperlinkedModelSerializer):
@@ -213,7 +213,7 @@ class UserBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = UserBookSession
-        fields = ('user', 'library', 'is_accepted', 'is_closed', 'url')
+        fields = ('user', 'library', 'is_accepted', 'is_closed', 'created_at', 'url')
 
 
 class UserBooksSessionsEditSerializer(serializers.ModelSerializer):
@@ -240,3 +240,54 @@ class UserBookRelationSerializer(serializers.ModelSerializer):
         fields = ('book', 'like', 'in_bookmarks', 'rate',)
 
 
+class MyBooksOffersListSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='my-offer-detail', read_only=True)
+    user = serializers.ReadOnlyField(source='user.username')
+    library = serializers.ReadOnlyField(source='library.title')
+
+    class Meta:
+        model = UserBookOffer
+        fields = ('user', 'library', 'is_accepted', 'is_closed', 'created_at', 'url')
+
+
+class MyBooksOfferDetailSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(source='user.username', queryset=User.objects.all())
+    library = serializers.PrimaryKeyRelatedField(source='library.title', queryset=Libraries.objects.all())
+
+    class Meta:
+        model = UserBookOffer
+        fields = ('user', 'library', 'quantity', 'books_description',  'is_accepted', 'is_closed',  'created_at')
+
+
+class MyBooksOfferCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserBookOffer
+        fields = ('library', 'quantity', 'books_description')
+
+
+class UserBooksOffersListSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='user-offer-detail', read_only=True)
+    user = serializers.ReadOnlyField(source='user.username')
+    library = serializers.ReadOnlyField(source='library.title')
+
+    class Meta:
+        model = UserBookOffer
+        fields = ('user', 'library', 'is_accepted', 'is_closed', 'created_at', 'url')
+
+
+class UserBooksOfferEditSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.username')
+
+    class Meta:
+        model = UserBookOffer
+        fields = ('user', 'library', 'quantity', 'books_description',  'is_accepted', 'is_closed',  'created_at')
+
+    def validate(self, data):
+        """Кастомная валидация изменения сессии пользователя"""
+        if self.instance.is_accepted:
+            if not data['is_accepted']:
+                raise serializers.ValidationError("Нельзя снять одобрение с уже одобренной заявки.")
+        if self.instance.is_closed:
+            raise serializers.ValidationError("Заявка закрыта. Изменение невозможно.")
+        return data

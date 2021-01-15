@@ -86,9 +86,10 @@ class UserBookSession(models.Model):
     end_date = models.DateField(verbose_name='Дата, когда вернут книги')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     class Meta:
-        ordering = ('is_closed', 'is_accepted', 'user', 'library')
+        ordering = ('-created_at', 'is_closed', 'is_accepted', 'user', 'library')
 
     def __str__(self):
         return f'Сессия {self.user} в {self.library}'
@@ -121,9 +122,13 @@ class UserBookOffer(models.Model):
     books_description = models.TextField(verbose_name='Описание книг')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
         return f'Предложение {self.user} книг в {self.library}'
+
+    class Meta:
+        ordering = ('-created_at', 'is_closed', 'is_accepted', 'user', 'library')
 
 
 class UserBookRelation(models.Model):

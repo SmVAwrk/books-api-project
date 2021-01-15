@@ -27,6 +27,7 @@ from books.serializers import *
 #         'sessions(admin)': reverse('sessions', request=request, format=format),
 #         'my-sessions': reverse('my-sessions', request=request, format=format),
 #     })
+from books.services import UserBookOfferFilter, UserBookSessionFilter
 
 
 class BooksViewSet(viewsets.ModelViewSet):
@@ -36,7 +37,8 @@ class BooksViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if self.action == 'list':
-            return Books.objects.filter(lib_available__available=True).select_related('author').prefetch_related('categories').distinct()
+            return Books.objects.filter(lib_available__available=True).select_related('author').prefetch_related(
+                'categories').distinct()
         elif self.action == 'retrieve':
             return Books.objects.all().annotate(
                 likes=Count(Case(When(userbookrelation__like=True, then=1))),
@@ -58,9 +60,9 @@ class BooksViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
-            return (permissions.AllowAny(), )
+            return (permissions.AllowAny(),)
         else:
-            return (permissions.IsAdminUser(), )
+            return (permissions.IsAdminUser(),)
 
 
 class AuthorsViewSet(viewsets.ModelViewSet):
@@ -80,9 +82,9 @@ class AuthorsViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
-            return (permissions.AllowAny(), )
+            return (permissions.AllowAny(),)
         else:
-            return (permissions.IsAdminUser(), )
+            return (permissions.IsAdminUser(),)
 
     @action(
         detail=True,
@@ -120,9 +122,9 @@ class CategoriesViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
-            return (permissions.AllowAny(), )
+            return (permissions.AllowAny(),)
         else:
-            return (permissions.IsAdminUser(), )
+            return (permissions.IsAdminUser(),)
 
     @action(
         detail=True,
@@ -158,9 +160,9 @@ class LibrariesViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
-            return (permissions.AllowAny(), )
+            return (permissions.AllowAny(),)
         else:
-            return (permissions.IsAdminUser(), )
+            return (permissions.IsAdminUser(),)
 
     @action(
         detail=True,
@@ -183,8 +185,7 @@ class MySessionsViewSet(mixins.CreateModelMixin,
                         mixins.RetrieveModelMixin,
                         mixins.ListModelMixin,
                         viewsets.GenericViewSet):
-
-    permission_classes = (permissions.IsAuthenticated, )
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -221,12 +222,11 @@ class UserSessionsViewSet(mixins.UpdateModelMixin,
                           mixins.ListModelMixin,
                           mixins.DestroyModelMixin,
                           viewsets.GenericViewSet):
-
     queryset = UserBookSession.objects.all().select_related('user', 'library').prefetch_related('books')
-    permission_classes = (permissions.IsAdminUser, )
+    permission_classes = (permissions.IsAdminUser,)
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filter_fields = ['is_accepted', 'is_closed']
     search_fields = ['books__title', 'user__username', 'library__title']
+    filterset_class = UserBookSessionFilter
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -249,3 +249,42 @@ class UserBookRelationViewSet(mixins.UpdateModelMixin,
         return obj
 
 
+class MyOffersViewSet(mixins.CreateModelMixin,
+                      mixins.RetrieveModelMixin,
+                      mixins.ListModelMixin,
+                      viewsets.GenericViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MyBooksOffersListSerializer
+        elif self.action == 'retrieve':
+            return MyBooksOfferDetailSerializer
+        else:
+            return MyBooksOfferCreateSerializer
+
+    def get_queryset(self):
+        return UserBookOffer.objects.filter(user=self.request.user).select_related('user', 'library')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class UserOffersViewSet(mixins.UpdateModelMixin,
+                        mixins.RetrieveModelMixin,
+                        mixins.ListModelMixin,
+                        mixins.DestroyModelMixin,
+                        viewsets.GenericViewSet):
+    queryset = UserBookOffer.objects.all().select_related('user', 'library')
+    permission_classes = (permissions.IsAdminUser,)
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['books__title', 'user__username', 'library__title']
+    filterset_class = UserBookOfferFilter
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserBooksOffersListSerializer
+        elif self.action == 'retrieve':
+            return MyBooksOfferDetailSerializer
+        else:
+            return UserBooksOfferEditSerializer

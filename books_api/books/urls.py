@@ -12,10 +12,13 @@ router.register('authors', AuthorsViewSet, basename='author')
 router.register('categories', CategoriesViewSet, basename='category')
 router.register('libraries', LibrariesViewSet, basename='library')
 router.register('my-sessions', MySessionsViewSet, basename='my-session')
+router.register('my-offers', MyOffersViewSet, basename='my-offer')
+
 router.register('available', BooksLibrariesAvailableViewSet, basename='available')
 router.register('user-sessions', UserSessionsViewSet, basename='user-session')
+router.register('user-offers', UserOffersViewSet, basename='user-offer')
+
 router.register('book-relation', UserBookRelationViewSet, basename='book-relation')
-# router.register('my-profile', MyProfileViewSet, basename='my-profile')
 
 
 urlpatterns = [
