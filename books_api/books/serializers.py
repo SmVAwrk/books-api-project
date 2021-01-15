@@ -41,12 +41,12 @@ class BookLibrarySerializer(serializers.ModelSerializer):
         fields = ('library', 'available')
 
 
-class BookRelationFromBookSerializer(serializers.HyperlinkedModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='book-relation-detail', read_only=True)
-
-    class Meta:
-        model = BookLibraryAvailable
-        fields = ('book', 'like', 'in_bookmarks', 'rate', 'urls')
+# class BookRelationFromBookSerializer(serializers.HyperlinkedModelSerializer):
+#     url = serializers.HyperlinkedIdentityField(view_name='book-relation-detail', read_only=True)
+#
+#     class Meta:
+#         model = BookLibraryAvailable
+#         fields = ('book', 'like', 'in_bookmarks', 'rate', 'urls')
 
 
 class BooksDetailSerializer(serializers.ModelSerializer):
@@ -54,13 +54,12 @@ class BooksDetailSerializer(serializers.ModelSerializer):
     categories = CategoriesForBooksDetailSerializer(many=True, read_only=True)
     lib_available = BookLibrarySerializer(many=True, read_only=True)
     # book_relation = BookRelationFromBookSerializer(many=True, read_only=True)
-    likes = serializers.IntegerField(read_only=True)
-    bookmarks = serializers.IntegerField(read_only=True)
-    readers = serializers.IntegerField(read_only=True)
+    reading_now = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Books
-        fields = ('id', 'title', 'author', 'description', 'categories', 'likes', 'bookmarks', 'readers', 'lib_available',)
+        fields = ('id', 'title', 'author', 'description', 'categories', 'rating',
+                  'likes', 'bookmarks', 'reading_now', 'lib_available',)
 
 
 class BookCreateSerializer(serializers.ModelSerializer):
@@ -168,7 +167,8 @@ class MyBooksSessionDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookSession
-        fields = ('user', 'library', 'books', 'start_date', 'end_date', 'is_accepted', 'is_closed', 'created_at')
+        fields = ('user', 'library', 'books', 'start_date', 'end_date',
+                  'is_accepted', 'is_closed', 'message', 'created_at')
 
 
 class MyBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
@@ -221,7 +221,7 @@ class UserBooksSessionsEditSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookSession
-        fields = ('user', 'books', 'library', 'start_date', 'end_date', 'is_accepted', 'is_closed')
+        fields = ('user', 'books', 'library', 'start_date', 'end_date', 'is_accepted', 'is_closed', 'message')
 
     def validate(self, data):
         """Кастомная валидация изменения сессии пользователя"""
@@ -256,7 +256,8 @@ class MyBooksOfferDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookOffer
-        fields = ('user', 'library', 'quantity', 'books_description',  'is_accepted', 'is_closed',  'created_at')
+        fields = ('user', 'library', 'quantity', 'books_description',
+                  'is_accepted', 'is_closed', 'message', 'created_at')
 
 
 class MyBooksOfferCreateSerializer(serializers.ModelSerializer):
@@ -281,7 +282,8 @@ class UserBooksOfferEditSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookOffer
-        fields = ('user', 'library', 'quantity', 'books_description',  'is_accepted', 'is_closed',  'created_at')
+        fields = ('user', 'library', 'quantity', 'books_description',
+                  'is_accepted', 'is_closed', 'message', 'created_at')
 
     def validate(self, data):
         """Кастомная валидация изменения сессии пользователя"""

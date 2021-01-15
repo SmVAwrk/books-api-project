@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from books.models import Books, Authors, Categories, Libraries, UserBookSession, UserBookRelation
 from books.permissions import IsOwnerOrAdmin, IsAdminOrOwnerReadOnly, IsOwnerOrAdminOrReadOnly
 from books.serializers import *
-
+from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksListFilter
 
 # @api_view(['GET'])
 # def api_root(request, format=None):
@@ -27,13 +27,12 @@ from books.serializers import *
 #         'sessions(admin)': reverse('sessions', request=request, format=format),
 #         'my-sessions': reverse('my-sessions', request=request, format=format),
 #     })
-from books.services import UserBookOfferFilter, UserBookSessionFilter
 
 
 class BooksViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filter_fields = ['author', 'categories', 'lib_available__available', ]
     search_fields = ['title']
+    filterset_class = BooksListFilter
 
     def get_queryset(self):
         if self.action == 'list':
@@ -41,11 +40,9 @@ class BooksViewSet(viewsets.ModelViewSet):
                 'categories').distinct()
         elif self.action == 'retrieve':
             return Books.objects.all().annotate(
-                likes=Count(Case(When(userbookrelation__like=True, then=1))),
-                bookmarks=Count(Case(When(userbookrelation__in_bookmarks=True, then=1))),
-                readers=Count(Case(When(session_books__is_accepted=True,
-                                        session_books__is_closed=False,
-                                        then=1))),
+                reading_now=Count(Case(When(session_books__is_accepted=True,
+                                            session_books__is_closed=False,
+                                            then=1))),
             ).select_related('author').prefetch_related('categories', 'lib_available__library')
         else:
             return Books.objects.all().select_related('author').prefetch_related('categories', 'lib_available__library')
@@ -186,6 +183,8 @@ class MySessionsViewSet(mixins.CreateModelMixin,
                         mixins.ListModelMixin,
                         viewsets.GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = [DjangoFilterBackend, ]
+    filter_fields = ['is_accepted', 'is_closed']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -254,6 +253,8 @@ class MyOffersViewSet(mixins.CreateModelMixin,
                       mixins.ListModelMixin,
                       viewsets.GenericViewSet):
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = [DjangoFilterBackend, ]
+    filter_fields = ['is_accepted', 'is_closed']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -288,3 +289,21 @@ class UserOffersViewSet(mixins.UpdateModelMixin,
             return MyBooksOfferDetailSerializer
         else:
             return UserBooksOfferEditSerializer
+
+
+class MyBookmarksViewSet(mixins.RetrieveModelMixin,
+                         mixins.ListModelMixin,
+                         viewsets.GenericViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = [SearchFilter, ]
+    search_fields = ['title', ]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return BooksListSerializer
+        else:
+            return BooksDetailSerializer
+
+    def get_queryset(self):
+        return Books.objects.filter(userbookrelation__user=self.request.user,
+                                    userbookrelation__in_bookmarks=True).select_related('author')

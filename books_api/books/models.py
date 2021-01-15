@@ -4,16 +4,20 @@ from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 User = get_user_model()
 
 
 class Books(models.Model):
     """Модель книг, которые можно забронировать"""
-    title = models.CharField(verbose_name='Название', max_length=255)
+    title = models.CharField(verbose_name='Название', max_length=255, unique=True)
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
     categories = models.ManyToManyField('Categories', verbose_name='Категории', blank=True, related_name='cat_books')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    rating = models.DecimalField(max_digits=3, decimal_places=2, null=True, default=None, verbose_name='Рейтинг')
+    likes = models.PositiveIntegerField(default=0, verbose_name='Мне нравится')
+    bookmarks = models.PositiveIntegerField(default=0, verbose_name='В закладках')
 
     class Meta:
         ordering = ['-created_at']
@@ -86,6 +90,7 @@ class UserBookSession(models.Model):
     end_date = models.DateField(verbose_name='Дата, когда вернут книги')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
+    message = models.TextField(verbose_name='Комментарий', default='-')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     class Meta:
@@ -93,25 +98,6 @@ class UserBookSession(models.Model):
 
     def __str__(self):
         return f'Сессия {self.user} в {self.library}'
-
-    # def save(self, *args, **kwargs):
-    #     old_accepted = self.is_accepted
-    #     old_closed = self.is_closed
-    #     super().save(*args, **kwargs)
-    #     new_accepted = self.is_accepted
-    #     new_closed = self.is_closed
-    #     if old_accepted != new_accepted:
-    #         book_library_relation = BookLibraryQuantity.objects.get(book=self.book,
-    #                                                                 library=self.library)
-    #         book_library_relation.available = F('available') - 1
-    #         book_library_relation.save()
-    #         book_library_relation.refresh_from_db()
-    #     if old_closed != new_closed:
-    #         book_library_relation = BookLibraryQuantity.objects.get(book=self.book,
-    #                                                                 library=self.library)
-    #         book_library_relation.available = F('available') + 1
-    #         book_library_relation.save()
-    #         book_library_relation.refresh_from_db()
 
 
 class UserBookOffer(models.Model):
@@ -122,6 +108,7 @@ class UserBookOffer(models.Model):
     books_description = models.TextField(verbose_name='Описание книг')
     is_accepted = models.BooleanField(default=False, verbose_name='Принято')
     is_closed = models.BooleanField(default=False, verbose_name='Закрыто')
+    message = models.TextField(verbose_name='Комментарий', default='-')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
@@ -144,10 +131,34 @@ class UserBookRelation(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     like = models.BooleanField(default=False, verbose_name='Мне нравится')
     in_bookmarks = models.BooleanField(default=False, verbose_name='В закладки')
-    rate = models.PositiveSmallIntegerField(choices=RATE, null=True, verbose_name='Оценка')
+    rate = models.PositiveSmallIntegerField(choices=RATE, blank=True, null=True, verbose_name='Оценка')
+
+    class Meta:
+        unique_together = ('book', 'user')
 
     def __str__(self):
         return f'Отношение {self.user} к {self.book}'
+
+    def save(self, *args, **kwargs):
+        creating = not self.pk
+        old_rate = self.rate
+        old_likes = self.like
+        old_bookmarks = self.in_bookmarks
+        super().save(*args, **kwargs)
+        new_rate = self.rate
+        new_likes = self.like
+        new_bookmarks = self.in_bookmarks
+
+        if old_rate != new_rate or creating:
+            from books.services import get_rating
+            get_rating(self.book)
+        if old_likes != new_likes or creating:
+            from books.services import get_likes
+            get_likes(self.book)
+        if old_bookmarks != new_bookmarks or creating:
+            from books.services import get_bookmarks
+            get_bookmarks(self.book)
+
 
 
 
