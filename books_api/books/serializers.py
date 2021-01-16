@@ -6,22 +6,22 @@ from books.models import Books, Authors, Categories, Libraries, BookLibraryAvail
     UserBookRelation, UserBookOffer
 
 
-class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
-    url = serializers.HyperlinkedIdentityField(view_name='category-books', read_only=True)
-
-    class Meta:
-        model = Categories
-        fields = ('title', 'url')
-
-
 class BooksListSerializer(serializers.HyperlinkedModelSerializer):
-    author = serializers.CharField(source='author.get_name')
+    author = serializers.ReadOnlyField(source='author.get_name')
     categories = serializers.SlugRelatedField(slug_field='title', read_only=True, many=True)
     url = serializers.HyperlinkedIdentityField(view_name='book-detail', read_only=True)
 
     class Meta:
         model = Books
         fields = ('title', 'author', 'categories', 'url',)
+
+
+class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='category-books', read_only=True)
+
+    class Meta:
+        model = Categories
+        fields = ('title', 'url')
 
 
 class AuthorForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
@@ -33,7 +33,7 @@ class AuthorForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('full_name', 'url')
 
 
-class BookLibrarySerializer(serializers.ModelSerializer):
+class LibrariesForBooksDetailSerializer(serializers.ModelSerializer):
     library = serializers.ReadOnlyField(source='library.title')
 
     class Meta:
@@ -41,19 +41,10 @@ class BookLibrarySerializer(serializers.ModelSerializer):
         fields = ('library', 'available')
 
 
-# class BookRelationFromBookSerializer(serializers.HyperlinkedModelSerializer):
-#     url = serializers.HyperlinkedIdentityField(view_name='book-relation-detail', read_only=True)
-#
-#     class Meta:
-#         model = BookLibraryAvailable
-#         fields = ('book', 'like', 'in_bookmarks', 'rate', 'urls')
-
-
 class BooksDetailSerializer(serializers.ModelSerializer):
     author = AuthorForBooksDetailSerializer(read_only=True)
     categories = CategoriesForBooksDetailSerializer(many=True, read_only=True)
-    lib_available = BookLibrarySerializer(many=True, read_only=True)
-    # book_relation = BookRelationFromBookSerializer(many=True, read_only=True)
+    lib_available = LibrariesForBooksDetailSerializer(many=True, read_only=True)
     reading_now = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -147,6 +138,8 @@ class BooksSessionCreateSerializer(serializers.ModelSerializer):
                                                                 library=data['library']).select_related('book',
                                                                                                         'library')
         obj_num = len(available_objects)
+        if not books_num:
+            raise serializers.ValidationError("Вы не выбрали ни одной книги.")
         if books_num != obj_num:
             raise serializers.ValidationError("Одной или нескольких книг нет в выбранной библиотеке")
         for available_object in available_objects:
@@ -237,7 +230,7 @@ class UserBookRelationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserBookRelation
-        fields = ('book', 'like', 'in_bookmarks', 'rate',)
+        exclude = ('user', 'id')
 
 
 class MyBooksOffersListSerializer(serializers.HyperlinkedModelSerializer):

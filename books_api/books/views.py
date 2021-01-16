@@ -30,8 +30,9 @@ from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksList
 
 
 class BooksViewSet(viewsets.ModelViewSet):
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_backends = [SearchFilter, DjangoFilterBackend, OrderingFilter]
     search_fields = ['title']
+    ordering_fields = ['rating', 'likes']
     filterset_class = BooksListFilter
 
     def get_queryset(self):
@@ -223,7 +224,7 @@ class UserSessionsViewSet(mixins.UpdateModelMixin,
                           viewsets.GenericViewSet):
     queryset = UserBookSession.objects.all().select_related('user', 'library').prefetch_related('books')
     permission_classes = (permissions.IsAdminUser,)
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_backends = [SearchFilter, DjangoFilterBackend,]
     search_fields = ['books__title', 'user__username', 'library__title']
     filterset_class = UserBookSessionFilter
 
@@ -278,8 +279,8 @@ class UserOffersViewSet(mixins.UpdateModelMixin,
                         viewsets.GenericViewSet):
     queryset = UserBookOffer.objects.all().select_related('user', 'library')
     permission_classes = (permissions.IsAdminUser,)
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    search_fields = ['books__title', 'user__username', 'library__title']
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['books_description', 'user__username', 'library__title']
     filterset_class = UserBookOfferFilter
 
     def get_serializer_class(self):
@@ -306,4 +307,5 @@ class MyBookmarksViewSet(mixins.RetrieveModelMixin,
 
     def get_queryset(self):
         return Books.objects.filter(userbookrelation__user=self.request.user,
-                                    userbookrelation__in_bookmarks=True).select_related('author')
+                                    userbookrelation__in_bookmarks=True).select_related('author').prefetch_related(
+                'categories')
