@@ -1,5 +1,7 @@
 from django.db.models import Case, When, Count
 from django.test import TestCase
+from rest_framework.exceptions import ValidationError
+
 from books.serializers import *
 
 
@@ -613,7 +615,7 @@ class MyBooksSessionDetailSerializerTestCase(TestCase):
             'is_accepted': False,
             'is_closed': False,
             'message': '-',
-            'created_at':  str(self.session_1.created_at)
+            'created_at': str(self.session_1.created_at)
         }
         data = MyBooksSessionDetailSerializer(self.session_1).data
         data['created_at'] = str(self.session_1.created_at)
@@ -627,13 +629,16 @@ class BooksSessionCreateSerializerTestCase(TestCase):
             first_name='Test',
             last_name='Author 1'
         )
-        self.category_1 = Categories.objects.create(title='Test category 1')
         self.book_1 = Books.objects.create(
             title='Test book 1',
             description='Test description 1',
             author=self.author_1,
         )
-        self.book_1.categories.add(self.category_1)
+        self.book_2 = Books.objects.create(
+            title='Test book 2',
+            description='Test description 2',
+            author=self.author_1,
+        )
         self.library_1 = Libraries.objects.create(
             title='Test Library 1',
             location='Test location 1',
@@ -664,6 +669,85 @@ class BooksSessionCreateSerializerTestCase(TestCase):
         }
         data = BooksSessionCreateSerializer(self.session_1).data
         self.assertEqual(expected_data, data, msg=data)
+
+    def test_validation_valid_data(self):
+        valid_data = {
+            'books': [
+                self.book_1,
+            ],
+            'library': self.library_1,
+            'start_date': self.test_start,
+            'end_date': self.test_end,
+        }
+        data = BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=valid_data)
+        self.assertEqual(valid_data, data)
+
+    def test_validation_without_books(self):
+        not_valid_data = {
+            'books': [],
+            'library': self.library_1,
+            'start_date': self.test_start,
+            'end_date': self.test_end
+        }
+        with self.assertRaises(ValidationError):
+            BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=not_valid_data)
+
+    def test_validation_without_book_library_relation(self):
+        not_valid_data = {
+            'books': [
+                self.book_1,
+                self.book_2
+            ],
+            'library': self.library_1,
+            'start_date': self.test_start,
+            'end_date': self.test_end
+        }
+        with self.assertRaises(ValidationError):
+            BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=not_valid_data)
+
+    def test_validation_book_not_available(self):
+        BookLibraryAvailable.objects.create(
+            book=self.book_2,
+            library=self.library_1,
+            available=False
+        )
+        not_valid_data = {
+            'books': [
+                self.book_1,
+                self.book_2
+            ],
+            'library': self.library_1,
+            'start_date': self.test_start,
+            'end_date': self.test_end
+        }
+        with self.assertRaises(ValidationError):
+            BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=not_valid_data)
+
+    def test_validation_start_date_yesterday(self):
+        test_start = datetime.datetime.now().date() - datetime.timedelta(days=1)
+        not_valid_data = {
+            'books': [
+                self.book_1,
+            ],
+            'library': self.library_1,
+            'start_date': test_start,
+            'end_date': self.test_end
+        }
+        with self.assertRaises(ValidationError):
+            BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=not_valid_data)
+
+    def test_validation_end_date_yesterday(self):
+        test_end = datetime.datetime.now().date() - datetime.timedelta(days=1)
+        not_valid_data = {
+            'books': [
+                self.book_1,
+            ],
+            'library': self.library_1,
+            'start_date': self.test_start,
+            'end_date': test_end
+        }
+        with self.assertRaises(ValidationError):
+            BooksSessionCreateSerializer.validate(self=BooksSessionCreateSerializer(), data=not_valid_data)
 
 
 class UserBooksSessionsListSerializerTestCase(TestCase):
@@ -796,6 +880,43 @@ class UserBooksSessionsEditSerializerTestCase(TestCase):
         data = UserBooksSessionsEditSerializer(self.session_1).data
         data['created_at'] = str(self.session_1.created_at)
         self.assertEqual(expected_data, data, msg=data)
+
+    def test_validate_valid_data(self):
+        session_2 = UserBookSession.objects.create(user=self.user_1, library=self.library_1,
+                                                   start_date=self.test_start,
+                                                   end_date=self.test_end)
+        session_2.books.add(self.book_1)
+        valid_data = {
+            'is_accepted': True,
+            'message': 'Test message',
+        }
+        data = UserBooksSessionsEditSerializer.validate(self=UserBooksSessionsEditSerializer(instance=session_2),
+                                                        data=valid_data)
+        self.assertEqual(valid_data, data)
+
+    def test_validate_cancel_accept(self):
+        session_2 = UserBookSession.objects.create(user=self.user_1, library=self.library_1,
+                                                   start_date=self.test_start,
+                                                   end_date=self.test_end, is_accepted=True)
+        session_2.books.add(self.book_1)
+        not_valid_data = {
+            'is_accepted': False
+        }
+        with self.assertRaises(ValidationError):
+            UserBooksSessionsEditSerializer.validate(self=UserBooksSessionsEditSerializer(instance=session_2),
+                                                     data=not_valid_data)
+
+    def test_validate_change_closed(self):
+        session_2 = UserBookSession.objects.create(user=self.user_1, library=self.library_1,
+                                                   start_date=self.test_start,
+                                                   end_date=self.test_end, is_closed=True)
+        session_2.books.add(self.book_1)
+        not_valid_data = {
+            'is_closed': False
+        }
+        with self.assertRaises(ValidationError):
+            UserBooksSessionsEditSerializer.validate(self=UserBooksSessionsEditSerializer(instance=session_2),
+                                                     data=not_valid_data)
 
 
 class BooksLibrariesAvailableListSerializerTestCase(TestCase):
@@ -1016,7 +1137,7 @@ class MyBooksOfferDetailSerializerTestCase(TestCase):
             'is_accepted': False,
             'is_closed': False,
             'message': '-',
-            'created_at':  str(self.offer_1.created_at)
+            'created_at': str(self.offer_1.created_at)
         }
         data = MyBooksOfferDetailSerializer(self.offer_1).data
         data['created_at'] = str(self.offer_1.created_at)
@@ -1111,8 +1232,39 @@ class UserBooksOfferEditSerializerTestCase(TestCase):
             'is_accepted': False,
             'is_closed': False,
             'message': '-',
-            'created_at':  str(self.offer_1.created_at)
+            'created_at': str(self.offer_1.created_at)
         }
         data = UserBooksOfferEditSerializer(self.offer_1).data
         data['created_at'] = str(self.offer_1.created_at)
         self.assertEqual(expected_data, data, msg=data)
+
+    def test_validate_valid_data(self):
+        offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
+                                               quantity=2, books_description='Testdis2')
+        valid_data = {
+            'is_accepted': True,
+            'message': 'Test message',
+        }
+        data = UserBooksOfferEditSerializer.validate(self=UserBooksOfferEditSerializer(instance=offer_2),
+                                                     data=valid_data)
+        self.assertEqual(valid_data, data)
+
+    def test_validate_cancel_accept(self):
+        offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
+                                               quantity=2, books_description='Testdis2', is_accepted=True)
+        not_valid_data = {
+            'is_accepted': False
+        }
+        with self.assertRaises(ValidationError):
+            UserBooksOfferEditSerializer.validate(self=UserBooksOfferEditSerializer(instance=offer_2),
+                                                  data=not_valid_data)
+
+    def test_validate_change_closed(self):
+        offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
+                                               quantity=2, books_description='Testdis2', is_closed=True)
+        not_valid_data = {
+            'is_closed': False
+        }
+        with self.assertRaises(ValidationError):
+            UserBooksOfferEditSerializer.validate(self=UserBooksOfferEditSerializer(instance=offer_2),
+                                                  data=not_valid_data)

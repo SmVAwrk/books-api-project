@@ -2,8 +2,12 @@ import datetime
 
 from rest_framework import serializers
 
-from books.models import Books, Authors, Categories, Libraries, BookLibraryAvailable, UserBookSession, User, \
-    UserBookRelation, UserBookOffer
+from books.models import (
+    Books, Authors,
+    Categories, Libraries,
+    BookLibraryAvailable, UserBookSession,
+    User, UserBookRelation, UserBookOffer
+)
 
 
 class BooksListSerializer(serializers.HyperlinkedModelSerializer):
@@ -121,7 +125,6 @@ class LibraryDetailSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class LibraryCreateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Libraries
         fields = ('title', 'location', 'phone')
@@ -230,7 +233,6 @@ class BooksLibrariesAvailableEditSerializer(serializers.ModelSerializer):
 
 
 class UserBookRelationSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserBookRelation
         exclude = ('user', 'id')
@@ -257,7 +259,6 @@ class MyBooksOfferDetailSerializer(serializers.ModelSerializer):
 
 
 class MyBooksOfferCreateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = UserBookOffer
         fields = ('library', 'quantity', 'books_description')

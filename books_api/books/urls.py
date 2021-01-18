@@ -1,10 +1,7 @@
-from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import SimpleRouter, DefaultRouter
-from rest_framework.urlpatterns import format_suffix_patterns
+from rest_framework.routers import DefaultRouter
 
 from books.views import *
-from books_api import settings
 
 router = DefaultRouter()
 router.register('books', BooksViewSet, basename='book')
