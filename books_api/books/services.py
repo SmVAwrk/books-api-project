@@ -27,7 +27,7 @@ class UserBookSessionFilter(FilterSet):
 
 
 class BooksListFilter(FilterSet):
-    categories = ModelMultipleChoiceFilter(queryset=Categories.objects.all(), conjoined=True)
+    categories = ModelMultipleChoiceFilter(queryset=Categories.objects.all())
     author = ModelChoiceFilter(queryset=Authors.objects.all())
     lib_available__library = ModelChoiceFilter(queryset=Libraries.objects.all())
 

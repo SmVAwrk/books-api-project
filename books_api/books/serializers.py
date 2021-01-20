@@ -10,17 +10,17 @@ from books.models import (
 )
 
 
-class BooksListSerializer(serializers.HyperlinkedModelSerializer):
+class BooksListSerializer(serializers.ModelSerializer):
     author = serializers.ReadOnlyField(source='author.get_name')
     categories = serializers.SlugRelatedField(slug_field='title', read_only=True, many=True)
     url = serializers.HyperlinkedIdentityField(view_name='book-detail', read_only=True)
 
     class Meta:
         model = Books
-        fields = ('title', 'author', 'categories', 'url',)
+        fields = ('title', 'author', 'categories', 'url')
 
 
-class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
+class CategoriesForBooksDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='category-books', read_only=True)
 
     class Meta:
@@ -28,7 +28,7 @@ class CategoriesForBooksDetailSerializer(serializers.HyperlinkedModelSerializer)
         fields = ('title', 'url')
 
 
-class AuthorForBooksDetailSerializer(serializers.HyperlinkedModelSerializer):
+class AuthorForBooksDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='author-books', read_only=True)
     full_name = serializers.ReadOnlyField(source='__str__')
 
@@ -63,7 +63,7 @@ class BookCreateSerializer(serializers.ModelSerializer):
         fields = ('title', 'description', 'author', 'categories')
 
 
-class AuthorsListSerializer(serializers.HyperlinkedModelSerializer):
+class AuthorsListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='author-detail', read_only=True)
     full_name = serializers.ReadOnlyField(source='__str__')
 
@@ -72,7 +72,7 @@ class AuthorsListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('full_name', 'url')
 
 
-class AuthorDetailSerializer(serializers.HyperlinkedModelSerializer):
+class AuthorDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='author-books', read_only=True)
 
     class Meta:
@@ -86,7 +86,7 @@ class AuthorCreateSerializer(serializers.ModelSerializer):
         fields = ('last_name', 'first_name', 'middle_name', 'description',)
 
 
-class CategoriesListSerializer(serializers.HyperlinkedModelSerializer):
+class CategoriesListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='category-detail', read_only=True)
 
     class Meta:
@@ -94,7 +94,7 @@ class CategoriesListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('title', 'url')
 
 
-class CategoryDetailSerializer(serializers.HyperlinkedModelSerializer):
+class CategoryDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='category-books', read_only=True)
 
     class Meta:
@@ -108,7 +108,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         fields = ('title', 'description')
 
 
-class LibrariesListSerializer(serializers.HyperlinkedModelSerializer):
+class LibrariesListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='library-detail', read_only=True)
 
     class Meta:
@@ -116,7 +116,7 @@ class LibrariesListSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('title', 'location', 'url')
 
 
-class LibraryDetailSerializer(serializers.HyperlinkedModelSerializer):
+class LibraryDetailSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='library-books', read_only=True)
 
     class Meta:
@@ -130,7 +130,7 @@ class LibraryCreateSerializer(serializers.ModelSerializer):
         fields = ('title', 'location', 'phone')
 
 
-class MyBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
+class MyBooksSessionsListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='my-session-detail', read_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     library = serializers.ReadOnlyField(source='library.title')
@@ -179,7 +179,7 @@ class BooksSessionCreateSerializer(serializers.ModelSerializer):
         return data
 
 
-class UserBooksSessionsListSerializer(serializers.HyperlinkedModelSerializer):
+class UserBooksSessionsListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-session-detail', read_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     library = serializers.ReadOnlyField(source='library.title')
@@ -207,7 +207,7 @@ class UserBooksSessionsEditSerializer(serializers.ModelSerializer):
         return data
 
 
-class BooksLibrariesAvailableListSerializer(serializers.HyperlinkedModelSerializer):
+class BooksLibrariesAvailableListSerializer(serializers.ModelSerializer):
     book = serializers.ReadOnlyField(source='book.title')
     library = serializers.ReadOnlyField(source='library.title')
     url = serializers.HyperlinkedIdentityField(view_name='available-detail', read_only=True)
@@ -238,7 +238,7 @@ class UserBookRelationSerializer(serializers.ModelSerializer):
         exclude = ('user', 'id')
 
 
-class MyBooksOffersListSerializer(serializers.HyperlinkedModelSerializer):
+class MyBooksOffersListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='my-offer-detail', read_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     library = serializers.ReadOnlyField(source='library.title')
@@ -264,7 +264,7 @@ class MyBooksOfferCreateSerializer(serializers.ModelSerializer):
         fields = ('library', 'quantity', 'books_description')
 
 
-class UserBooksOffersListSerializer(serializers.HyperlinkedModelSerializer):
+class UserBooksOffersListSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='user-offer-detail', read_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     library = serializers.ReadOnlyField(source='library.title')

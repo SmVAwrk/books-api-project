@@ -49,7 +49,6 @@ class BooksListSerializerTestCase(TestCase):
                     'Test category 2',
                 ],
                 'url': f'/api/v1/books/{self.book_2.id}/'
-
             },
         ]
         data = BooksListSerializer([self.book_1, self.book_2], many=True, context={'request': None}).data

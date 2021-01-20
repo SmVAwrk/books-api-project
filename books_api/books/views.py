@@ -1,19 +1,14 @@
-from django.db.models import F, Count, Case, When
-from django.http import JsonResponse
-from django.shortcuts import render
+from django.db.models import Count, Case, When
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, permissions, status, mixins
-from rest_framework import generics
-from rest_framework.decorators import api_view, action
+from rest_framework import viewsets, permissions, mixins
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
-from rest_framework.views import APIView
 
 from books.models import Books, Authors, Categories, Libraries, UserBookSession, UserBookRelation
-from books.permissions import IsOwnerOrAdmin, IsAdminOrOwnerReadOnly, IsOwnerOrAdminOrReadOnly
 from books.serializers import *
 from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksListFilter
+
 
 # @api_view(['GET'])
 # def api_root(request, format=None):
@@ -86,8 +81,6 @@ class AuthorsViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        # serializer_class=BooksListSerializer,
-        # permission_classes=(permissions.AllowAny(), ),
         url_name='books',
         url_path='books',
     )
@@ -202,6 +195,26 @@ class MySessionsViewSet(mixins.CreateModelMixin,
         serializer.save(user=self.request.user)
 
 
+class UserSessionsViewSet(mixins.UpdateModelMixin,
+                          mixins.RetrieveModelMixin,
+                          mixins.ListModelMixin,
+                          mixins.DestroyModelMixin,
+                          viewsets.GenericViewSet):
+    queryset = UserBookSession.objects.all().select_related('user', 'library').prefetch_related('books')
+    permission_classes = (permissions.IsAdminUser,)
+    filter_backends = [SearchFilter, DjangoFilterBackend]
+    search_fields = ['books__title', 'user__username', 'library__title']
+    filterset_class = UserBookSessionFilter
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return UserBooksSessionsListSerializer
+        elif self.action == 'retrieve':
+            return MyBooksSessionDetailSerializer
+        else:
+            return UserBooksSessionsEditSerializer
+
+
 class BooksLibrariesAvailableViewSet(viewsets.ModelViewSet):
     queryset = BookLibraryAvailable.objects.all().select_related('book', 'library')
     permission_classes = (permissions.IsAdminUser,)
@@ -215,26 +228,6 @@ class BooksLibrariesAvailableViewSet(viewsets.ModelViewSet):
             return BooksLibrariesAvailableDetailSerializer
         else:
             return BooksLibrariesAvailableEditSerializer
-
-
-class UserSessionsViewSet(mixins.UpdateModelMixin,
-                          mixins.RetrieveModelMixin,
-                          mixins.ListModelMixin,
-                          mixins.DestroyModelMixin,
-                          viewsets.GenericViewSet):
-    queryset = UserBookSession.objects.all().select_related('user', 'library').prefetch_related('books')
-    permission_classes = (permissions.IsAdminUser,)
-    filter_backends = [SearchFilter, DjangoFilterBackend,]
-    search_fields = ['books__title', 'user__username', 'library__title']
-    filterset_class = UserBookSessionFilter
-
-    def get_serializer_class(self):
-        if self.action == 'list':
-            return UserBooksSessionsListSerializer
-        elif self.action == 'retrieve':
-            return MyBooksSessionDetailSerializer
-        else:
-            return UserBooksSessionsEditSerializer
 
 
 class UserBookRelationViewSet(mixins.UpdateModelMixin,
@@ -307,5 +300,5 @@ class MyBookmarksViewSet(mixins.RetrieveModelMixin,
 
     def get_queryset(self):
         return Books.objects.filter(userbookrelation__user=self.request.user,
-                                    userbookrelation__in_bookmarks=True).select_related('author').prefetch_related(
-                'categories')
+                                    userbookrelation__in_bookmarks=True).select_related(
+            'author').prefetch_related('categories')

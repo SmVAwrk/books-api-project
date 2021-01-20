@@ -52,6 +52,9 @@ class Categories(models.Model):
     title = models.CharField(verbose_name='Название', max_length=255)
     description = models.TextField(verbose_name='Описание', blank=True, null=True)
 
+    class Meta:
+        ordering = ['title']
+
     def __str__(self):
         return self.title
 
@@ -64,6 +67,9 @@ class Libraries(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['title']
 
 
 class BookLibraryAvailable(models.Model):
