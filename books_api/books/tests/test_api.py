@@ -1,24 +1,26 @@
 import datetime
 import json
-from pprint import pprint
 
 from django.db.models import Count, Case, When
-from django.http import HttpRequest
-from django.test import TestCase
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
-from books.models import Authors, User, Categories, Books, Libraries, BookLibraryAvailable, UserBookRelation, \
-    UserBookSession, UserBookOffer
-from books.serializers import BooksListSerializer, BooksDetailSerializer, BookCreateSerializer, AuthorsListSerializer, \
-    AuthorDetailSerializer, CategoriesListSerializer, CategoryDetailSerializer, LibrariesListSerializer, \
-    LibraryDetailSerializer, MyBooksSessionsListSerializer, MyBooksSessionDetailSerializer, \
-    UserBooksSessionsListSerializer, UserBooksSessionsEditSerializer, LibraryCreateSerializer, AuthorCreateSerializer, \
-    CategoryCreateSerializer, BooksSessionCreateSerializer, BooksLibrariesAvailableListSerializer, \
-    BooksLibrariesAvailableDetailSerializer, BooksLibrariesAvailableEditSerializer, UserBookRelationSerializer, \
-    MyBooksOffersListSerializer, MyBooksOfferDetailSerializer, MyBooksOfferCreateSerializer, \
+from books.models import (
+    Authors, User, Categories,
+    Books, Libraries, BookLibraryAvailable,
+    UserBookRelation, UserBookSession, UserBookOffer
+)
+from books.serializers import (
+    BooksListSerializer, BooksDetailSerializer, BookCreateSerializer, AuthorsListSerializer,
+    AuthorDetailSerializer, CategoriesListSerializer, CategoryDetailSerializer, LibrariesListSerializer,
+    LibraryDetailSerializer, MyBooksSessionsListSerializer, MyBooksSessionDetailSerializer,
+    UserBooksSessionsListSerializer, UserBooksSessionsEditSerializer, LibraryCreateSerializer, AuthorCreateSerializer,
+    CategoryCreateSerializer, BooksSessionCreateSerializer, BooksLibrariesAvailableListSerializer,
+    BooksLibrariesAvailableDetailSerializer, BooksLibrariesAvailableEditSerializer, UserBookRelationSerializer,
+    MyBooksOffersListSerializer, MyBooksOfferDetailSerializer, MyBooksOfferCreateSerializer,
     UserBooksOffersListSerializer, UserBooksOfferEditSerializer
+)
 
 
 class BooksViewSetTestCase(APITestCase):

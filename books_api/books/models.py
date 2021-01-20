@@ -1,15 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import F
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 
 User = get_user_model()
 
 
 class Books(models.Model):
-    """Модель книг, которые можно забронировать"""
+    """Модель книг, доступных в в бибилотеке"""
     title = models.CharField(verbose_name='Название', max_length=255, unique=True)
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
@@ -73,7 +70,7 @@ class Libraries(models.Model):
 
 
 class BookLibraryAvailable(models.Model):
-    """Модель связи определенной книги с определенной библиотекой"""
+    """Модель наличия и доступности определенной книги в определенной библиотекой"""
     book = models.ForeignKey(Books, on_delete=models.CASCADE, verbose_name='Книга', related_name='lib_available')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE,
                                 verbose_name='Библиотека', related_name='book_available')
@@ -88,7 +85,7 @@ class BookLibraryAvailable(models.Model):
 
 
 class UserBookSession(models.Model):
-    """Модель заявки пользовтаеля на сессию с книгой"""
+    """Модель заявки пользовтаеля на сессию с книгами"""
     books = models.ManyToManyField(Books, verbose_name='Книги', blank=True, related_name='session_books')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
@@ -107,7 +104,7 @@ class UserBookSession(models.Model):
 
 
 class UserBookOffer(models.Model):
-    """Модель предложения книг пользователем"""
+    """Модель предложения книг в определенную бибилотеку"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
     quantity = models.PositiveSmallIntegerField(verbose_name='Кол-во книг')
@@ -125,7 +122,7 @@ class UserBookOffer(models.Model):
 
 
 class UserBookRelation(models.Model):
-    """Модель отношения пользователя и книги"""
+    """Модель отношения пользователя к книги"""
     RATE = (
         (1, 'Плохо'),
         (2, 'Так себе'),
@@ -146,6 +143,7 @@ class UserBookRelation(models.Model):
         return f'Отношение {self.user} к {self.book}'
 
     def save(self, *args, **kwargs):
+        """Обновление полей рейтинга, лайков и закладок книги при создании или изменении отношения"""
         creating = not self.pk
         old_rate = self.rate
         old_likes = self.like
@@ -156,14 +154,14 @@ class UserBookRelation(models.Model):
         new_bookmarks = self.in_bookmarks
 
         if old_rate != new_rate or creating:
-            from books.services import get_rating
-            get_rating(self.book)
+            from books.services import set_rating
+            set_rating(self.book)
         if old_likes != new_likes or creating:
-            from books.services import get_likes
-            get_likes(self.book)
+            from books.services import set_likes
+            set_likes(self.book)
         if old_bookmarks != new_bookmarks or creating:
-            from books.services import get_bookmarks
-            get_bookmarks(self.book)
+            from books.services import set_bookmarks
+            set_bookmarks(self.book)
 
 
 

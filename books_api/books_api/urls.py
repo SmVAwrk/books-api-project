@@ -23,6 +23,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
 ]
 
+# подключение debug_toolbar в режиме DEBUG
 if settings.DEBUG:
     import debug_toolbar
     urlpatterns = [

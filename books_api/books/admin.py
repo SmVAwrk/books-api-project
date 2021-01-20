@@ -1,5 +1,9 @@
 from django.contrib import admin
-from books.models import *
+from books.models import (
+    Books, Authors, Categories,
+    Libraries, BookLibraryAvailable, UserBookSession,
+    UserBookRelation, UserBookOffer
+)
 
 admin.site.register(Books)
 admin.site.register(Authors)
