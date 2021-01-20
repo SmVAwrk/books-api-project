@@ -16,12 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from books_api import settings
+from .yasg import urlpatterns as docs_url
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include('books.urls')),
     path('api-auth/', include('rest_framework.urls')),
 ]
+
+urlpatterns += docs_url
 
 # подключение debug_toolbar в режиме DEBUG
 if settings.DEBUG:
