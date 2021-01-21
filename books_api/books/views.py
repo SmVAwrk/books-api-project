@@ -20,7 +20,7 @@ from books.serializers import (
     MyBooksOffersListSerializer, MyBooksOfferDetailSerializer, MyBooksOfferCreateSerializer,
     UserBooksOffersListSerializer, UserBooksOfferEditSerializer
 )
-from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksListFilter
+from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksListFilter, set_book_values
 
 
 class BooksViewSet(viewsets.ModelViewSet):
@@ -299,14 +299,19 @@ class UserBookRelationViewSet(mixins.UpdateModelMixin,
     1. Создание своего экземпляра отношения пользователя к книги.
     2. Обновление своего экземпляра отношения пользователя к книги.
     """
-    permission_classes = [permissions.IsAuthenticated, ]
+    permission_classes = (permissions.IsAuthenticated, )
     queryset = UserBookRelation.objects.all()
     serializer_class = UserBookRelationSerializer
     lookup_field = 'book'
 
     def get_object(self):
-        obj, created = UserBookRelation.objects.get_or_create(user=self.request.user, book_id=self.kwargs['book'])
+        obj, self.created = UserBookRelation.objects.get_or_create(user=self.request.user, book_id=self.kwargs['book'])
         return obj
+
+    def perform_update(self, serializer):
+        """Обновления полей рейтинга, лайков и закладок книги"""
+        serializer.save()
+        set_book_values(serializer, self.created)
 
 
 class MyOffersViewSet(mixins.CreateModelMixin,

@@ -264,11 +264,11 @@ class UserBooksSessionsEditSerializer(serializers.ModelSerializer):
         - проверка снятия одобрения с уже одобренной сессии,
         - проверка изменения закрытой сессии
         """
-        if self.instance.is_accepted:
-            if not data['is_accepted']:
-                raise serializers.ValidationError("Нельзя снять одобрение с уже одобренной сессии.")
         if self.instance.is_closed:
             raise serializers.ValidationError("Сессия закрыта. Изменение невозможно.")
+        if self.instance.is_accepted:
+            if not data.get('is_accepted', True):
+                raise serializers.ValidationError("Нельзя снять одобрение с уже одобренной сессии.")
         return data
 
 
@@ -374,9 +374,9 @@ class UserBooksOfferEditSerializer(serializers.ModelSerializer):
         - проверка снятия одобрения с уже одобреннго предложения,
         - проверка изменения закрытого предложения
         """
-        if self.instance.is_accepted:
-            if not data['is_accepted']:
-                raise serializers.ValidationError("Нельзя снять одобрение с уже одобренной заявки.")
         if self.instance.is_closed:
             raise serializers.ValidationError("Заявка закрыта. Изменение невозможно.")
+        if self.instance.is_accepted:
+            if not data.get('is_accepted', True):
+                raise serializers.ValidationError("Нельзя снять одобрение с уже одобренной заявки.")
         return data

@@ -141,28 +141,3 @@ class UserBookRelation(models.Model):
 
     def __str__(self):
         return f'Отношение {self.user} к {self.book}'
-
-    def save(self, *args, **kwargs):
-        """Обновление полей рейтинга, лайков и закладок книги при создании или изменении отношения"""
-        creating = not self.pk
-        old_rate = self.rate
-        old_likes = self.like
-        old_bookmarks = self.in_bookmarks
-        super().save(*args, **kwargs)
-        new_rate = self.rate
-        new_likes = self.like
-        new_bookmarks = self.in_bookmarks
-
-        if old_rate != new_rate or creating:
-            from books.services import set_rating
-            set_rating(self.book)
-        if old_likes != new_likes or creating:
-            from books.services import set_likes
-            set_likes(self.book)
-        if old_bookmarks != new_bookmarks or creating:
-            from books.services import set_bookmarks
-            set_bookmarks(self.book)
-
-
-
-

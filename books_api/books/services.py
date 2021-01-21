@@ -56,7 +56,7 @@ class BooksListFilter(FilterSet):
 
 def set_rating(book):
     """
-    Функция для подсчёта рейтинга книги
+    Функция для подсчёта рейтинга книги,
     в качестве аргумента принимает экземпляр книги
     """
     book.rating = UserBookRelation.objects.filter(book=book).aggregate(rating=Avg('rate')).get('rating')
@@ -65,7 +65,7 @@ def set_rating(book):
 
 def set_likes(book):
     """
-    Функция для подсчёта лайков книги
+    Функция для подсчёта лайков книги,
     в качестве аргумента принимает экземпляр книги
     """
     book.likes = UserBookRelation.objects.filter(book=book, like=True).select_related('user').count()
@@ -74,10 +74,28 @@ def set_likes(book):
 
 def set_bookmarks(book):
     """
-    Функция для подсчёта закладок книги
+    Функция для подсчёта закладок книги,
     в качестве аргумента принимает экземпляр книги
     """
     book.bookmarks = UserBookRelation.objects.filter(book=book, in_bookmarks=True).select_related('user').count()
     book.save()
 
 
+def set_book_values(serializer, created):
+    """
+    Функция для обновления полей рейтинга, лайков и закладок книги при создании или изменении отношения,
+    в качестве аргументов принимает сериализатор и bool-значение создания отношения
+    """
+    functions_dict = {
+        'rate': set_rating,
+        'like': set_likes,
+        'in_bookmarks': set_bookmarks
+    }
+    if created:
+        for field in functions_dict:
+            function = functions_dict[field]
+            function(serializer.instance.book)
+    else:
+        for field in serializer.validated_data:
+            function = functions_dict[field]
+            function(serializer.instance.book)

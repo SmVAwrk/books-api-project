@@ -1,7 +1,8 @@
 from django.test import TestCase
 
 from books.models import Authors, Books, UserBookRelation, User
-from books.services import set_rating, set_likes, set_bookmarks
+from books.serializers import UserBookRelationSerializer
+from books.services import set_rating, set_likes, set_bookmarks, set_book_values
 
 
 class SetRatingTestCase(TestCase):
@@ -109,3 +110,43 @@ class SetBookmarksTestCase(TestCase):
         set_bookmarks(self.book_1)
         self.book_1.refresh_from_db()
         self.assertEqual(3, self.book_1.bookmarks)
+
+
+class SetBookValuesTestCase(TestCase):
+
+    def setUp(self):
+        self.user_1 = User.objects.create_user(username='User1', password='password')
+        self.author_1 = Authors.objects.create(
+            first_name='Test',
+            last_name='Author 1'
+        )
+        self.book_1 = Books.objects.create(
+            title='Test book 1',
+            description='Test description 1',
+            author=self.author_1,
+        )
+        self.relation_1, self.created = UserBookRelation.objects.get_or_create(user=self.user_1, book=self.book_1,
+                                                                               in_bookmarks=True)
+
+    def test_ok_create(self):
+        serializer = UserBookRelationSerializer(self.relation_1)
+        set_book_values(serializer, self.created)
+        self.book_1.refresh_from_db()
+        self.assertEqual(None, self.book_1.rating)
+        self.assertEqual(0, self.book_1.likes)
+        self.assertEqual(1, self.book_1.bookmarks)
+
+    def test_ok_update(self):
+        data = {
+            'like': True,
+            'in_bookmarks': False,
+            'rate': 5
+        }
+        serializer = UserBookRelationSerializer(instance=self.relation_1, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+        set_book_values(serializer, False)
+        self.book_1.refresh_from_db()
+        self.assertEqual('5.00', str(self.book_1.rating))
+        self.assertEqual(1, self.book_1.likes)
+        self.assertEqual(0, self.book_1.bookmarks)
