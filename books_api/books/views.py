@@ -10,16 +10,7 @@ from books.models import (
     Libraries, UserBookSession, UserBookRelation,
     BookLibraryAvailable, UserBookOffer
 )
-from books.serializers import (
-    BooksListSerializer, BooksDetailSerializer, BookCreateSerializer, AuthorsListSerializer,
-    AuthorDetailSerializer, AuthorCreateSerializer, CategoriesListSerializer, CategoryDetailSerializer,
-    CategoryCreateSerializer, LibrariesListSerializer, LibraryDetailSerializer, LibraryCreateSerializer,
-    MyBooksSessionsListSerializer, MyBooksSessionDetailSerializer, BooksSessionCreateSerializer,
-    UserBooksSessionsListSerializer, UserBooksSessionsEditSerializer, BooksLibrariesAvailableListSerializer,
-    BooksLibrariesAvailableDetailSerializer, BooksLibrariesAvailableEditSerializer, UserBookRelationSerializer,
-    MyBooksOffersListSerializer, MyBooksOfferDetailSerializer, MyBooksOfferCreateSerializer,
-    UserBooksOffersListSerializer, UserBooksOfferEditSerializer
-)
+import books.serializers as s
 from books.services import UserBookOfferFilter, UserBookSessionFilter, BooksListFilter, set_book_values
 
 
@@ -54,17 +45,16 @@ class BooksViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return BooksListSerializer
+            return s.BooksListSerializer
         elif self.action == 'retrieve':
-            return BooksDetailSerializer
+            return s.BooksDetailSerializer
         else:
-            return BookCreateSerializer
+            return s.BookCreateSerializer
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return (permissions.AllowAny(),)
-        else:
-            return (permissions.IsAdminUser(),)
+        return (permissions.IsAdminUser(),)
 
 
 class AuthorsViewSet(viewsets.ModelViewSet):
@@ -73,7 +63,7 @@ class AuthorsViewSet(viewsets.ModelViewSet):
     --- Доступно всем пользователям ---
     1. Получение списка авторов с возможностью поиска по фамилии и имени.
     2. Получение экземпляра автора.
-    3. Получение списка всех книг определенного автора.
+    3. Получение списка всех книг определенного автора с возможностью поиска по названию.
     --- Доступно администраторам ---
     4. Создание, обновление и удаление экземпляра автора.
     """
@@ -83,35 +73,37 @@ class AuthorsViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return AuthorsListSerializer
+            return s.AuthorsListSerializer
         elif self.action == 'retrieve':
-            return AuthorDetailSerializer
+            return s.AuthorDetailSerializer
         elif self.action == 'get_books':
-            return BooksListSerializer
+            return s.BooksListSerializer
         else:
-            return AuthorCreateSerializer
+            return s.AuthorCreateSerializer
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
             return (permissions.AllowAny(),)
-        else:
-            return (permissions.IsAdminUser(),)
+        return (permissions.IsAdminUser(),)
 
     @action(
         detail=True,
         url_name='books',
         url_path='books',
+        queryset=Books.objects.all(),
+        search_fields=['title', ]
     )
     def get_books(self, request, pk=None):
         """Создание кастомного действия для просмотра списка книг автора"""
-        books_by_author = Books.objects.filter(author=self.get_object()).select_related('author').prefetch_related(
+        books_by_author = Books.objects.filter(author=self.kwargs['pk']).select_related('author').prefetch_related(
             'categories')
-        page = self.paginate_queryset(books_by_author)
+        queryset = self.filter_queryset(books_by_author)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(books_by_author, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
@@ -121,7 +113,7 @@ class CategoriesViewSet(viewsets.ModelViewSet):
     --- Доступно всем пользователям ---
     1. Получение списка категорий с возможностью поиска по названию.
     2. Получение экземпляра категории.
-    3. Получение списка всех книг определенной категории.
+    3. Получение списка всех книг определенной категории с возможностью поиска по названию.
     --- Доступно администраторам ---
     4. Создание, обновление и удаление экземпляра категории.
     """
@@ -131,35 +123,36 @@ class CategoriesViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return CategoriesListSerializer
+            return s.CategoriesListSerializer
         elif self.action == 'retrieve':
-            return CategoryDetailSerializer
+            return s.CategoryDetailSerializer
         elif self.action == 'get_books':
-            return BooksListSerializer
+            return s.BooksListSerializer
         else:
-            return CategoryCreateSerializer
+            return s.CategoryCreateSerializer
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
             return (permissions.AllowAny(),)
-        else:
-            return (permissions.IsAdminUser(),)
+        return (permissions.IsAdminUser(),)
 
     @action(
         detail=True,
         url_name='books',
-        url_path='books'
+        url_path='books',
+        queryset=Books.objects.all()
     )
     def get_books(self, request, pk=None):
         """Создание кастомного действия для просмотра списка книг категории"""
-        books_by_category = Books.objects.filter(categories=self.get_object()).select_related(
-            'author').prefetch_related('categories')
-        page = self.paginate_queryset(books_by_category)
+        books_by_author = Books.objects.filter(categories=self.kwargs['pk']).select_related('author').prefetch_related(
+            'categories')
+        queryset = self.filter_queryset(books_by_author)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(books_by_category, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
@@ -169,7 +162,7 @@ class LibrariesViewSet(viewsets.ModelViewSet):
     --- Доступно всем пользователям ---
     1. Получение списка библиотек с возможностью поиска по названию.
     2. Получение экземпляра библиотеки.
-    3. Получение списка всех доступных книг в определенной библиотеке.
+    3. Получение списка всех доступных книг в определенной библиотеке с возможностью поиска по названию.
     --- Доступно администраторам ---
     4. Создание, обновление и удаление экземпляра библиотеки.
     """
@@ -179,13 +172,13 @@ class LibrariesViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return LibrariesListSerializer
+            return s.LibrariesListSerializer
         elif self.action == 'retrieve':
-            return LibraryDetailSerializer
+            return s.LibraryDetailSerializer
         elif self.action == 'get_books':
-            return BooksListSerializer
+            return s.BooksListSerializer
         else:
-            return LibraryCreateSerializer
+            return s.LibraryCreateSerializer
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve', 'get_books'):
@@ -196,18 +189,20 @@ class LibrariesViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         url_name='books',
-        url_path='books'
+        url_path='books',
+        queryset=Books.objects.all(),
     )
     def get_books(self, request, pk=None):
         """Создание кастомного действия для просмотра списка книг доступных в определенной библиотеке"""
-        books_by_library = Books.objects.filter(lib_available__library=self.get_object()).select_related(
+        books_by_author = Books.objects.filter(lib_available__library=self.kwargs['pk']).select_related(
             'author').prefetch_related('categories')
-        page = self.paginate_queryset(books_by_library)
+        queryset = self.filter_queryset(books_by_author)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(books_by_library, many=True)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
 
@@ -228,11 +223,11 @@ class MySessionsViewSet(mixins.CreateModelMixin,
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return MyBooksSessionsListSerializer
+            return s.MyBooksSessionsListSerializer
         elif self.action == 'retrieve':
-            return MyBooksSessionDetailSerializer
+            return s.MyBooksSessionDetailSerializer
         else:
-            return BooksSessionCreateSerializer
+            return s.BooksSessionCreateSerializer
 
     def get_queryset(self):
         return UserBookSession.objects.filter(user=self.request.user).select_related('user', 'library')
@@ -250,7 +245,7 @@ class UserSessionsViewSet(mixins.UpdateModelMixin,
     Набор представлений для следующих действий:
     --- Доступно администраторам ---
     1. Получение списка пользовательских сессий с возможностью поиска по названию книги,
-    имени пользователя и названию бибилотеки и фильтрации через UserBookSessionFilter.
+    имени пользователя и названию библиотеки и фильтрации через UserBookSessionFilter.
     2. Получение экземпляра сессии.
     3. Обновление и удаление экземпляра сессии.
     """
@@ -262,18 +257,18 @@ class UserSessionsViewSet(mixins.UpdateModelMixin,
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return UserBooksSessionsListSerializer
+            return s.UserBooksSessionsListSerializer
         elif self.action == 'retrieve':
-            return MyBooksSessionDetailSerializer
+            return s.MyBooksSessionDetailSerializer
         else:
-            return UserBooksSessionsEditSerializer
+            return s.UserBooksSessionsEditSerializer
 
 
 class BooksLibrariesAvailableViewSet(viewsets.ModelViewSet):
     """
     Набор представлений для следующих действий:
     --- Доступно администраторам ---
-    1. Получение списка экземпляров BookLibraryAvailable с возможностью фильтрации по книге и бибилотеке.
+    1. Получение списка экземпляров BookLibraryAvailable с возможностью фильтрации по книге и библиотеке.
     2. Получение экземпляра BookLibraryAvailable.
     3. Создание, обновление и удаление экземпляра BookLibraryAvailable.
     """
@@ -284,11 +279,11 @@ class BooksLibrariesAvailableViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return BooksLibrariesAvailableListSerializer
+            return s.BooksLibrariesAvailableListSerializer
         elif self.action == 'retrieve':
-            return BooksLibrariesAvailableDetailSerializer
+            return s.BooksLibrariesAvailableDetailSerializer
         else:
-            return BooksLibrariesAvailableEditSerializer
+            return s.BooksLibrariesAvailableEditSerializer
 
 
 class UserBookRelationViewSet(mixins.UpdateModelMixin,
@@ -301,7 +296,7 @@ class UserBookRelationViewSet(mixins.UpdateModelMixin,
     """
     permission_classes = (permissions.IsAuthenticated, )
     queryset = UserBookRelation.objects.all()
-    serializer_class = UserBookRelationSerializer
+    serializer_class = s.UserBookRelationSerializer
     lookup_field = 'book'
 
     def get_object(self):
@@ -331,11 +326,11 @@ class MyOffersViewSet(mixins.CreateModelMixin,
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return MyBooksOffersListSerializer
+            return s.MyBooksOffersListSerializer
         elif self.action == 'retrieve':
-            return MyBooksOfferDetailSerializer
+            return s.MyBooksOfferDetailSerializer
         else:
-            return MyBooksOfferCreateSerializer
+            return s.MyBooksOfferCreateSerializer
 
     def get_queryset(self):
         return UserBookOffer.objects.filter(user=self.request.user).select_related('user', 'library')
@@ -353,7 +348,7 @@ class UserOffersViewSet(mixins.UpdateModelMixin,
     Набор представлений для следующих действий:
     --- Доступно администраторам ---
     1. Получение списка пользовательских предложений с возможностью поиска по описанию книг,
-    имени пользователя и названию бибилотеки и фильтрации через UserBookOfferFilter.
+    имени пользователя и названию библиотеки и фильтрации через UserBookOfferFilter.
     2. Получение экземпляра предложения.
     3. Обновление и удаление экземпляра предложения.
     """
@@ -365,11 +360,11 @@ class UserOffersViewSet(mixins.UpdateModelMixin,
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return UserBooksOffersListSerializer
+            return s.UserBooksOffersListSerializer
         elif self.action == 'retrieve':
-            return MyBooksOfferDetailSerializer
+            return s.MyBooksOfferDetailSerializer
         else:
-            return UserBooksOfferEditSerializer
+            return s.UserBooksOfferEditSerializer
 
 
 class MyBookmarksViewSet(mixins.RetrieveModelMixin,
@@ -387,9 +382,8 @@ class MyBookmarksViewSet(mixins.RetrieveModelMixin,
 
     def get_serializer_class(self):
         if self.action == 'list':
-            return BooksListSerializer
-        else:
-            return BooksDetailSerializer
+            return s.BooksListSerializer
+        return s.BooksDetailSerializer
 
     def get_queryset(self):
         return Books.objects.filter(userbookrelation__user=self.request.user,

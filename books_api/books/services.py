@@ -97,5 +97,7 @@ def set_book_values(serializer, created):
             function(serializer.instance.book)
     else:
         for field in serializer.validated_data:
-            function = functions_dict[field]
+            function = functions_dict.get(field)
+            if not function:
+                continue
             function(serializer.instance.book)

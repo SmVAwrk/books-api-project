@@ -1085,9 +1085,9 @@ class MyBooksOffersListSerializerTestCase(TestCase):
         )
         self.user_1 = User.objects.create_user(username='User1', password='testpass')
         self.offer_1 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                                    quantity=1, books_description='Testdis1')
+                                                    quantity=1, books_description='Testdes1')
         self.offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_2,
-                                                    quantity=2, books_description='Testdis2')
+                                                    quantity=2, books_description='Testdes2')
 
     def test_ok(self):
         expected_data = [
@@ -1125,14 +1125,14 @@ class MyBooksOfferDetailSerializerTestCase(TestCase):
         )
         self.user_1 = User.objects.create_user(username='User1', password='testpass')
         self.offer_1 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                                    quantity=1, books_description='Testdis1')
+                                                    quantity=1, books_description='Testdes1')
 
     def test_ok(self):
         expected_data = {
             'user': 'User1',
             'library': 'Test Library 1',
             'quantity': 1,
-            'books_description': 'Testdis1',
+            'books_description': 'Testdes1',
             'is_accepted': False,
             'is_closed': False,
             'message': '-',
@@ -1153,13 +1153,13 @@ class MyBooksOfferCreateSerializerTestCase(TestCase):
         )
         self.user_1 = User.objects.create_user(username='User1', password='testpass')
         self.offer_1 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                                    quantity=1, books_description='Testdis1')
+                                                    quantity=1, books_description='Testdes1')
 
     def test_ok(self):
         expected_data = {
             'library': self.library_1.id,
             'quantity': 1,
-            'books_description': 'Testdis1',
+            'books_description': 'Testdes1',
         }
         data = MyBooksOfferCreateSerializer(self.offer_1).data
         self.assertEqual(expected_data, data, msg=data)
@@ -1180,9 +1180,9 @@ class UserBooksOffersListSerializerTestCase(TestCase):
         )
         self.user_1 = User.objects.create_user(username='User1', password='testpass')
         self.offer_1 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                                    quantity=1, books_description='Testdis1')
+                                                    quantity=1, books_description='Testdes1')
         self.offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_2,
-                                                    quantity=2, books_description='Testdis2')
+                                                    quantity=2, books_description='Testdes2')
 
     def test_ok(self):
         expected_data = [
@@ -1220,14 +1220,14 @@ class UserBooksOfferEditSerializerTestCase(TestCase):
         )
         self.user_1 = User.objects.create_user(username='User1', password='testpass')
         self.offer_1 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                                    quantity=1, books_description='Testdis1')
+                                                    quantity=1, books_description='Testdes1')
 
     def test_ok(self):
         expected_data = {
             'user': 'User1',
             'library': self.library_1.id,
             'quantity': 1,
-            'books_description': 'Testdis1',
+            'books_description': 'Testdes1',
             'is_accepted': False,
             'is_closed': False,
             'message': '-',
@@ -1239,7 +1239,7 @@ class UserBooksOfferEditSerializerTestCase(TestCase):
 
     def test_validate_valid_data(self):
         offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                               quantity=2, books_description='Testdis2')
+                                               quantity=2, books_description='Testdes2')
         valid_data = {
             'is_accepted': True,
             'message': 'Test message',
@@ -1250,7 +1250,7 @@ class UserBooksOfferEditSerializerTestCase(TestCase):
 
     def test_validate_cancel_accept(self):
         offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                               quantity=2, books_description='Testdis2', is_accepted=True)
+                                               quantity=2, books_description='Testdes2', is_accepted=True)
         not_valid_data = {
             'is_accepted': False
         }
@@ -1260,7 +1260,7 @@ class UserBooksOfferEditSerializerTestCase(TestCase):
 
     def test_validate_change_closed(self):
         offer_2 = UserBookOffer.objects.create(user=self.user_1, library=self.library_1,
-                                               quantity=2, books_description='Testdis2', is_closed=True)
+                                               quantity=2, books_description='Testdes2', is_closed=True)
         not_valid_data = {
             'is_closed': False
         }

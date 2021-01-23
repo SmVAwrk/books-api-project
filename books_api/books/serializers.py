@@ -109,7 +109,7 @@ class AuthorCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Authors
-        fields = ('last_name', 'first_name', 'middle_name', 'description',)
+        fields = ('last_name', 'first_name', 'middle_name', 'description')
 
 
 class CategoriesListSerializer(serializers.ModelSerializer):
@@ -204,6 +204,7 @@ class MyBooksSessionDetailSerializer(serializers.ModelSerializer):
 
 class BooksSessionCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания сессии"""
+
     class Meta:
         model = UserBookSession
         fields = ('books', 'library', 'start_date', 'end_date')
@@ -217,8 +218,7 @@ class BooksSessionCreateSerializer(serializers.ModelSerializer):
         """
         books_num = len(data['books'])
         available_objects = BookLibraryAvailable.objects.filter(book__in=[book.id for book in data['books']],
-                                                                library=data['library']).select_related('book',
-                                                                                                        'library')
+                                                                library=data['library']).select_related('book')
         obj_num = len(available_objects)
         if not books_num:
             raise serializers.ValidationError("Вы не выбрали ни одной книги.")
@@ -347,7 +347,7 @@ class MyBooksOfferCreateSerializer(serializers.ModelSerializer):
 
 class UserBooksOffersListSerializer(serializers.ModelSerializer):
     """
-    Сериализатор для получения списка предложений книг пользовтаелей
+    Сериализатор для получения списка предложений книг пользователей
     с гиперссылками на их экземпляры
     """
     url = serializers.HyperlinkedIdentityField(view_name='user-offer-detail', read_only=True)
@@ -371,7 +371,7 @@ class UserBooksOfferEditSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """
         Кастомная валидация данных при обновлении предложения:
-        - проверка снятия одобрения с уже одобреннго предложения,
+        - проверка снятия одобрения с уже одобренного предложения,
         - проверка изменения закрытого предложения
         """
         if self.instance.is_closed:
