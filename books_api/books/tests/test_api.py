@@ -44,7 +44,6 @@ class BooksViewSetTestCase(APITestCase):
         books = Books.objects.filter(lib_available__available=True).select_related('author').prefetch_related(
             'categories').distinct()
         serializer_data = s.BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
-        # response.wsgi_request - под вопросом
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
