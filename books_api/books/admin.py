@@ -13,5 +13,3 @@ admin.site.register(BookLibraryAvailable)
 admin.site.register(UserBookSession)
 admin.site.register(UserBookRelation)
 admin.site.register(UserBookOffer)
-
-

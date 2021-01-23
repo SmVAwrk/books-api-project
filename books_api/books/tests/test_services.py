@@ -136,7 +136,7 @@ class SetBookValuesTestCase(TestCase):
         self.assertEqual(0, self.book_1.likes)
         self.assertEqual(1, self.book_1.bookmarks)
 
-    def test_ok_update(self):
+    def test_ok_partial_update(self):
         data = {
             'like': True,
             'in_bookmarks': False,
@@ -150,3 +150,19 @@ class SetBookValuesTestCase(TestCase):
         self.assertEqual('5.00', str(self.book_1.rating))
         self.assertEqual(1, self.book_1.likes)
         self.assertEqual(0, self.book_1.bookmarks)
+
+    def test_ok_update(self):
+        data = {
+            'book': self.book_1.id,
+            'like': True,
+            'in_bookmarks': True,
+            'rate': 3
+        }
+        serializer = UserBookRelationSerializer(instance=self.relation_1, data=data)
+        if serializer.is_valid():
+            serializer.save()
+        set_book_values(serializer, False)
+        self.book_1.refresh_from_db()
+        self.assertEqual('3.00', str(self.book_1.rating))
+        self.assertEqual(1, self.book_1.likes)
+        self.assertEqual(1, self.book_1.bookmarks)

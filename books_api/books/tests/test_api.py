@@ -11,16 +11,7 @@ from books.models import (
     Books, Libraries, BookLibraryAvailable,
     UserBookRelation, UserBookSession, UserBookOffer
 )
-from books.serializers import (
-    BooksListSerializer, BooksDetailSerializer, BookCreateSerializer, AuthorsListSerializer,
-    AuthorDetailSerializer, CategoriesListSerializer, CategoryDetailSerializer, LibrariesListSerializer,
-    LibraryDetailSerializer, MyBooksSessionsListSerializer, MyBooksSessionDetailSerializer,
-    UserBooksSessionsListSerializer, UserBooksSessionsEditSerializer, LibraryCreateSerializer, AuthorCreateSerializer,
-    CategoryCreateSerializer, BooksSessionCreateSerializer, BooksLibrariesAvailableListSerializer,
-    BooksLibrariesAvailableDetailSerializer, BooksLibrariesAvailableEditSerializer, UserBookRelationSerializer,
-    MyBooksOffersListSerializer, MyBooksOfferDetailSerializer, MyBooksOfferCreateSerializer,
-    UserBooksOffersListSerializer, UserBooksOfferEditSerializer
-)
+import books.serializers as s
 
 
 class BooksViewSetTestCase(APITestCase):
@@ -52,7 +43,7 @@ class BooksViewSetTestCase(APITestCase):
         response = self.client.get(url)
         books = Books.objects.filter(lib_available__available=True).select_related('author').prefetch_related(
             'categories').distinct()
-        serializer_data = BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
         # response.wsgi_request - под вопросом
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
@@ -63,7 +54,7 @@ class BooksViewSetTestCase(APITestCase):
         books = Books.objects.filter(title__contains='Book 1',
                                      lib_available__available=True).select_related('author').prefetch_related(
             'categories').distinct()
-        serializer_data = BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -73,7 +64,7 @@ class BooksViewSetTestCase(APITestCase):
         books = Books.objects.filter(categories__in=[self.category_1.id],
                                      lib_available__available=True).select_related('author').prefetch_related(
             'categories').distinct()
-        serializer_data = BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -86,7 +77,7 @@ class BooksViewSetTestCase(APITestCase):
         response = self.client.get(url, data={'ordering': '-rating'})
         books = Books.objects.filter(lib_available__available=True).select_related('author').prefetch_related(
             'categories').distinct().order_by('-rating')
-        serializer_data = BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -98,7 +89,7 @@ class BooksViewSetTestCase(APITestCase):
                                         session_books__is_closed=False,
                                         then=1))),
         ).select_related('author').prefetch_related('categories', 'lib_available__library')
-        serializer_data = BooksDetailSerializer(books[0], context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksDetailSerializer(books[0], context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -132,7 +123,7 @@ class BooksViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         book = Books.objects.order_by('-id').first()
-        serializer_data = BookCreateSerializer(book, context={'request': response.wsgi_request}).data
+        serializer_data = s.BookCreateSerializer(book, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
     def test_update_not_admin(self):
@@ -155,7 +146,7 @@ class BooksViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         book = Books.objects.get(pk=self.book_1.id)
-        serializer_data = BookCreateSerializer(book, context={'request': response.wsgi_request}).data
+        serializer_data = s.BookCreateSerializer(book, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertEqual('Test Book 1', Books.objects.get(pk=self.book_1.id).title)
 
@@ -181,18 +172,18 @@ class AuthorsViewSetTestCase(APITestCase):
         self.author_2 = Authors.objects.create(first_name='Test', last_name='Author 2')
         self.category_1 = Categories.objects.create(title='Category 1')
         self.category_2 = Categories.objects.create(title='Category 2')
-        self.book_1 = Books.objects.create(title='Book 1', description='Desc1', author=self.author_1)
+        self.book_1 = Books.objects.create(title='Book1', description='Desc1', author=self.author_1)
         self.book_1.categories.add(self.category_1)
-        self.book_2 = Books.objects.create(title='Book 2', description='Desc2', author=self.author_2)
+        self.book_2 = Books.objects.create(title='Book2', description='Desc2', author=self.author_2)
         self.book_2.categories.add(self.category_1, self.category_2)
-        self.book_3 = Books.objects.create(title='Book 3', description='Desc3', author=self.author_2)
+        self.book_3 = Books.objects.create(title='Book3', description='Desc3', author=self.author_2)
         self.book_3.categories.add(self.category_2)
 
     def test_list(self):
         url = reverse('author-list')
         response = self.client.get(url)
         authors = Authors.objects.all()
-        serializer_data = AuthorsListSerializer(authors, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.AuthorsListSerializer(authors, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -200,7 +191,7 @@ class AuthorsViewSetTestCase(APITestCase):
         url = reverse('author-list')
         response = self.client.get(url, data={'search': 'Author 2'})
         authors = Authors.objects.filter(last_name__contains='Author 2')
-        serializer_data = AuthorsListSerializer(authors, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.AuthorsListSerializer(authors, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -208,7 +199,7 @@ class AuthorsViewSetTestCase(APITestCase):
         url = reverse('author-detail', kwargs={'pk': self.author_1.id})
         response = self.client.get(path=url)
         author = Authors.objects.get(pk=self.author_1.id)
-        serializer_data = AuthorDetailSerializer(author, context={'request': response.wsgi_request}).data
+        serializer_data = s.AuthorDetailSerializer(author, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -217,8 +208,18 @@ class AuthorsViewSetTestCase(APITestCase):
         response = self.client.get(path=url)
         books_by_author = Books.objects.filter(author=self.author_1.id).select_related('author').prefetch_related(
             'categories')
-        serializer_data = BooksListSerializer(books_by_author, many=True,
-                                              context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books_by_author, many=True,
+                                                context={'request': response.wsgi_request}).data
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(serializer_data, response.data['results'])
+
+    def test_get_books_search(self):
+        url = reverse('author-books', kwargs={'pk': self.author_2.id})
+        response = self.client.get(url, data={'search': 'Book3'})
+        books_by_library = Books.objects.filter(author=self.author_2.id, title__contains='Book3').select_related(
+            'author').prefetch_related('categories')
+        serializer_data = s.BooksListSerializer(books_by_library, many=True,
+                                                context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -244,7 +245,7 @@ class AuthorsViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         author = Authors.objects.order_by('-id').first()
-        serializer_data = AuthorCreateSerializer(author, context={'request': response.wsgi_request}).data
+        serializer_data = s.AuthorCreateSerializer(author, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
     def test_update_not_admin(self):
@@ -267,7 +268,7 @@ class AuthorsViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         author = Authors.objects.get(pk=self.author_1.id)
-        serializer_data = AuthorCreateSerializer(author, context={'request': response.wsgi_request}).data
+        serializer_data = s.AuthorCreateSerializer(author, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertEqual('Test Author 3', author.last_name)
 
@@ -293,18 +294,19 @@ class CategoriesViewSetTestCase(APITestCase):
         self.author_2 = Authors.objects.create(first_name='Test', last_name='Author 2')
         self.category_1 = Categories.objects.create(title='Category 1')
         self.category_2 = Categories.objects.create(title='Category 2')
-        self.book_1 = Books.objects.create(title='Book 1', description='Desc1', author=self.author_1)
+        self.book_1 = Books.objects.create(title='Book1', description='Desc1', author=self.author_1)
         self.book_1.categories.add(self.category_1)
-        self.book_2 = Books.objects.create(title='Book 2', description='Desc2', author=self.author_2)
+        self.book_2 = Books.objects.create(title='Book2', description='Desc2', author=self.author_2)
         self.book_2.categories.add(self.category_1, self.category_2)
-        self.book_3 = Books.objects.create(title='Book 3', description='Desc3', author=self.author_2)
+        self.book_3 = Books.objects.create(title='Book3', description='Desc3', author=self.author_2)
         self.book_3.categories.add(self.category_2)
 
     def test_list(self):
         url = reverse('category-list')
         response = self.client.get(url)
         categories = Categories.objects.all()
-        serializer_data = CategoriesListSerializer(categories, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.CategoriesListSerializer(categories, many=True,
+                                                     context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -312,7 +314,8 @@ class CategoriesViewSetTestCase(APITestCase):
         url = reverse('category-list')
         response = self.client.get(url, data={'search': 'Category 1'})
         categories = Categories.objects.filter(title__contains='Category 1')
-        serializer_data = CategoriesListSerializer(categories, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.CategoriesListSerializer(categories, many=True,
+                                                     context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -320,17 +323,27 @@ class CategoriesViewSetTestCase(APITestCase):
         url = reverse('category-detail', kwargs={'pk': self.category_1.id})
         response = self.client.get(url)
         category = Categories.objects.get(pk=self.category_1.id)
-        serializer_data = CategoryDetailSerializer(category, context={'request': response.wsgi_request}).data
+        serializer_data = s.CategoryDetailSerializer(category, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
     def test_get_books(self):
         url = reverse('category-books', kwargs={'pk': self.category_1.id})
         response = self.client.get(path=url)
-        books_by_category = Books.objects.filter(categories=self.category_1.id).select_related('author').prefetch_related(
-            'categories')
-        serializer_data = BooksListSerializer(books_by_category, many=True,
-                                              context={'request': response.wsgi_request}).data
+        books_by_category = Books.objects.filter(categories=self.category_1.id).select_related(
+            'author').prefetch_related('categories')
+        serializer_data = s.BooksListSerializer(books_by_category, many=True,
+                                                context={'request': response.wsgi_request}).data
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(serializer_data, response.data['results'])
+
+    def test_get_books_search(self):
+        url = reverse('category-books', kwargs={'pk': self.category_1.id})
+        response = self.client.get(url, data={'search': 'Book1'})
+        books_by_library = Books.objects.filter(categories=self.category_1.id, title__contains='Book1').select_related(
+            'author').prefetch_related('categories')
+        serializer_data = s.BooksListSerializer(books_by_library, many=True,
+                                                context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -354,7 +367,7 @@ class CategoriesViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         category = Categories.objects.order_by('-id').first()
-        serializer_data = CategoryCreateSerializer(category, context={'request': response.wsgi_request}).data
+        serializer_data = s.CategoryCreateSerializer(category, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
     def test_update_not_admin(self):
@@ -377,7 +390,7 @@ class CategoriesViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         category = Categories.objects.get(pk=self.category_1.id)
-        serializer_data = CategoryCreateSerializer(category, context={'request': response.wsgi_request}).data
+        serializer_data = s.CategoryCreateSerializer(category, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertEqual('Test Category 1', category.title)
 
@@ -403,20 +416,23 @@ class LibrariesViewSetTestCase(APITestCase):
         self.author_2 = Authors.objects.create(first_name='Test', last_name='Author 2')
         self.category_1 = Categories.objects.create(title='Category 1')
         self.category_2 = Categories.objects.create(title='Category 2')
-        self.book_1 = Books.objects.create(title='Book 1', description='Desc1', author=self.author_1)
+        self.book_1 = Books.objects.create(title='Book1', description='Desc1', author=self.author_1)
         self.book_1.categories.add(self.category_1)
-        self.book_2 = Books.objects.create(title='Book 2', description='Desc2', author=self.author_2)
+        self.book_2 = Books.objects.create(title='Book2', description='Desc2', author=self.author_2)
         self.book_2.categories.add(self.category_1, self.category_2)
-        self.book_3 = Books.objects.create(title='Book 3', description='Desc3', author=self.author_2)
+        self.book_3 = Books.objects.create(title='Book3', description='Desc3', author=self.author_2)
         self.book_3.categories.add(self.category_2)
         self.library_1 = Libraries.objects.create(title='Lib 1', location='Loc 1', phone='Phone 1')
         self.library_2 = Libraries.objects.create(title='Lib 2', location='Loc 2', phone='Phone 2')
+        BookLibraryAvailable.objects.create(book=self.book_1, library=self.library_1, available=True)
+        BookLibraryAvailable.objects.create(book=self.book_2, library=self.library_1, available=True)
 
     def test_list(self):
         url = reverse('library-list')
         response = self.client.get(url)
         libraries = Libraries.objects.all()
-        serializer_data = LibrariesListSerializer(libraries, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.LibrariesListSerializer(libraries, many=True,
+                                                    context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -424,8 +440,8 @@ class LibrariesViewSetTestCase(APITestCase):
         url = reverse('library-list')
         response = self.client.get(url, data={'search': 'Lib 1'})
         libraries = Libraries.objects.filter(title__contains='Lib 1')
-        serializer_data = LibrariesListSerializer(libraries, many=True,
-                                                  context={'request': response.wsgi_request}).data
+        serializer_data = s.LibrariesListSerializer(libraries, many=True,
+                                                    context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -433,7 +449,7 @@ class LibrariesViewSetTestCase(APITestCase):
         url = reverse('library-detail', kwargs={'pk': self.library_1.id})
         response = self.client.get(url)
         library = Libraries.objects.get(pk=self.library_1.id)
-        serializer_data = LibraryDetailSerializer(library, context={'request': response.wsgi_request}).data
+        serializer_data = s.LibraryDetailSerializer(library, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -442,8 +458,19 @@ class LibrariesViewSetTestCase(APITestCase):
         response = self.client.get(url)
         books_by_library = Books.objects.filter(lib_available__library=self.library_1.id).select_related(
             'author').prefetch_related('categories')
-        serializer_data = BooksListSerializer(books_by_library, many=True,
-                                              context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(books_by_library, many=True,
+                                                context={'request': response.wsgi_request}).data
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(serializer_data, response.data['results'])
+
+    def test_get_books_search(self):
+        url = reverse('library-books', kwargs={'pk': self.library_1.id})
+        response = self.client.get(url, data={'search': 'Book1'})
+        books_by_library = Books.objects.filter(lib_available__library=self.library_1.id,
+                                                title__contains='Book1').select_related(
+            'author').prefetch_related('categories')
+        serializer_data = s.BooksListSerializer(books_by_library, many=True,
+                                                context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -471,7 +498,7 @@ class LibrariesViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         library = Libraries.objects.order_by('-id').first()
-        serializer_data = LibraryCreateSerializer(library, context={'request': response.wsgi_request}).data
+        serializer_data = s.LibraryCreateSerializer(library, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
     def test_update_not_admin(self):
@@ -494,7 +521,7 @@ class LibrariesViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         library = Libraries.objects.get(pk=self.library_1.id)
-        serializer_data = LibraryCreateSerializer(library, context={'request': response.wsgi_request}).data
+        serializer_data = s.LibraryCreateSerializer(library, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertEqual('Test Loc 1', library.location)
 
@@ -551,8 +578,8 @@ class MySessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url)
         sessions = UserBookSession.objects.filter(user=self.user_1).select_related('user', 'library')
-        serializer_data = MyBooksSessionsListSerializer(sessions, many=True,
-                                                        context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksSessionsListSerializer(sessions, many=True,
+                                                          context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -561,8 +588,8 @@ class MySessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url, data={'is_accepted': True})
         sessions = UserBookSession.objects.filter(user=self.user_1, is_accepted=True).select_related('user', 'library')
-        serializer_data = MyBooksSessionsListSerializer(sessions, many=True,
-                                                        context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksSessionsListSerializer(sessions, many=True,
+                                                          context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -571,7 +598,7 @@ class MySessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url)
         session = UserBookSession.objects.get(pk=self.session_1.id)
-        serializer_data = MyBooksSessionDetailSerializer(session, context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksSessionDetailSerializer(session, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -590,7 +617,7 @@ class MySessionsViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         session = UserBookSession.objects.order_by('-id').first()
-        serializer_data = BooksSessionCreateSerializer(session, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksSessionCreateSerializer(session, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
 
@@ -636,8 +663,8 @@ class UserSessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         sessions = UserBookSession.objects.all().select_related('user', 'library')
-        serializer_data = UserBooksSessionsListSerializer(sessions, many=True,
-                                                          context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksSessionsListSerializer(sessions, many=True,
+                                                            context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -646,8 +673,8 @@ class UserSessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url, data={'search': 'Lib1'})
         sessions = UserBookSession.objects.filter(library__title__contains='Lib1').select_related('user', 'library')
-        serializer_data = UserBooksSessionsListSerializer(sessions, many=True,
-                                                          context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksSessionsListSerializer(sessions, many=True,
+                                                            context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'], f'\n{serializer_data}\n{response.data["results"]}')
 
@@ -656,8 +683,8 @@ class UserSessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url, data={'is_accepted': False})
         sessions = UserBookSession.objects.filter(is_accepted=False).select_related('user', 'library')
-        serializer_data = UserBooksSessionsListSerializer(sessions, many=True,
-                                                          context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksSessionsListSerializer(sessions, many=True,
+                                                            context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -666,7 +693,7 @@ class UserSessionsViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         session = UserBookSession.objects.get(pk=self.session_1.id)
-        serializer_data = MyBooksSessionDetailSerializer(session, context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksSessionDetailSerializer(session, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -680,7 +707,7 @@ class UserSessionsViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         session = UserBookSession.objects.get(pk=self.session_1.id)
-        serializer_data = UserBooksSessionsEditSerializer(session, context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksSessionsEditSerializer(session, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertTrue(session.is_accepted)
 
@@ -723,8 +750,8 @@ class BooksLibrariesAvailableViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         available_relations = BookLibraryAvailable.objects.all().select_related('book', 'library')
-        serializer_data = BooksLibrariesAvailableListSerializer(available_relations, many=True,
-                                                                context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksLibrariesAvailableListSerializer(available_relations, many=True,
+                                                                  context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -733,8 +760,8 @@ class BooksLibrariesAvailableViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url, data={'book': self.book_1.id})
         available_relations = BookLibraryAvailable.objects.filter(book=self.book_1).select_related('book', 'library')
-        serializer_data = BooksLibrariesAvailableListSerializer(available_relations, many=True,
-                                                                context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksLibrariesAvailableListSerializer(available_relations, many=True,
+                                                                  context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -743,7 +770,8 @@ class BooksLibrariesAvailableViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         available_relation = BookLibraryAvailable.objects.get(pk=self.available_1.id)
-        serializer_data = BooksLibrariesAvailableDetailSerializer(available_relation, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksLibrariesAvailableDetailSerializer(available_relation,
+                                                                    context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -759,8 +787,8 @@ class BooksLibrariesAvailableViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         available_relation = BookLibraryAvailable.objects.order_by('-id').first()
-        serializer_data = BooksLibrariesAvailableEditSerializer(available_relation,
-                                                       context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksLibrariesAvailableEditSerializer(available_relation,
+                                                                  context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
     def test_update(self):
@@ -773,8 +801,8 @@ class BooksLibrariesAvailableViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         available_relation = BookLibraryAvailable.objects.get(pk=self.available_1.id)
-        serializer_data = BooksLibrariesAvailableEditSerializer(available_relation,
-                                                                context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksLibrariesAvailableEditSerializer(available_relation,
+                                                                  context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertFalse(available_relation.available)
 
@@ -814,7 +842,7 @@ class UserBookRelationViewSetTestCase(APITestCase):
         json_data = json.dumps(updated_data)
         response = self.client.put(url, data=json_data, content_type='application/json')
         book_relation = UserBookRelation.objects.get(user=self.user_1, book=self.book_1)
-        serializer_data = UserBookRelationSerializer(book_relation).data
+        serializer_data = s.UserBookRelationSerializer(book_relation).data
         self.assertEqual(serializer_data, response.data, f'\n{serializer_data}\n{response.data}')
         self.assertTrue(book_relation.like)
 
@@ -840,8 +868,8 @@ class MyOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url)
         offers = UserBookOffer.objects.filter(user=self.user_1).select_related('user', 'library')
-        serializer_data = MyBooksOffersListSerializer(offers, many=True,
-                                                      context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksOffersListSerializer(offers, many=True,
+                                                        context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -850,8 +878,8 @@ class MyOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url, data={'is_accepted': True})
         offers = UserBookOffer.objects.filter(user=self.user_1, is_accepted=True).select_related('user', 'library')
-        serializer_data = MyBooksOffersListSerializer(offers, many=True,
-                                                      context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksOffersListSerializer(offers, many=True,
+                                                        context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -860,7 +888,7 @@ class MyOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url)
         offer = UserBookOffer.objects.get(pk=self.offer_1.id)
-        serializer_data = MyBooksOfferDetailSerializer(offer, context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksOfferDetailSerializer(offer, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -876,7 +904,7 @@ class MyOffersViewSetTestCase(APITestCase):
         response = self.client.post(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_201_CREATED, response.status_code)
         offer = UserBookOffer.objects.order_by('-id').first()
-        serializer_data = MyBooksOfferCreateSerializer(offer, context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksOfferCreateSerializer(offer, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
 
 
@@ -903,8 +931,8 @@ class UserOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         offers = UserBookOffer.objects.all().select_related('user', 'library')
-        serializer_data = UserBooksOffersListSerializer(offers, many=True,
-                                                        context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksOffersListSerializer(offers, many=True,
+                                                          context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -913,8 +941,8 @@ class UserOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url, data={'search': 'Lib1'})
         offers = UserBookOffer.objects.filter(library__title__contains='Lib1').select_related('user', 'library')
-        serializer_data = UserBooksOffersListSerializer(offers, many=True,
-                                                        context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksOffersListSerializer(offers, many=True,
+                                                          context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -923,8 +951,8 @@ class UserOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url, data={'is_accepted': False})
         offers = UserBookOffer.objects.filter(is_accepted=False).select_related('user', 'library')
-        serializer_data = UserBooksOffersListSerializer(offers, many=True,
-                                                        context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksOffersListSerializer(offers, many=True,
+                                                          context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data['results'])
 
@@ -933,7 +961,7 @@ class UserOffersViewSetTestCase(APITestCase):
         self.client.force_login(self.user_staff)
         response = self.client.get(url)
         offer = UserBookOffer.objects.get(pk=self.offer_1.id)
-        serializer_data = MyBooksOfferDetailSerializer(offer, context={'request': response.wsgi_request}).data
+        serializer_data = s.MyBooksOfferDetailSerializer(offer, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
 
@@ -947,7 +975,7 @@ class UserOffersViewSetTestCase(APITestCase):
         response = self.client.patch(url, data=json_data, content_type='application/json')
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         offer = UserBookOffer.objects.get(pk=self.offer_1.id)
-        serializer_data = UserBooksOfferEditSerializer(offer, context={'request': response.wsgi_request}).data
+        serializer_data = s.UserBooksOfferEditSerializer(offer, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data)
         self.assertTrue(offer.is_accepted)
 
@@ -986,7 +1014,7 @@ class MyBookmarksViewSetTestCase(APITestCase):
         bookmarks = Books.objects.filter(userbookrelation__user=self.user_1,
                                          userbookrelation__in_bookmarks=True).select_related(
             'author').prefetch_related('categories')
-        serializer_data = BooksListSerializer(bookmarks, many=True, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksListSerializer(bookmarks, many=True, context={'request': response.wsgi_request}).data
         self.assertEqual(serializer_data, response.data['results'])
 
     def test_retrieve(self):
@@ -994,8 +1022,6 @@ class MyBookmarksViewSetTestCase(APITestCase):
         self.client.force_login(self.user_1)
         response = self.client.get(url)
         book = Books.objects.get(pk=self.book_1.id)
-        serializer_data = BooksDetailSerializer(book, context={'request': response.wsgi_request}).data
+        serializer_data = s.BooksDetailSerializer(book, context={'request': response.wsgi_request}).data
         self.assertEqual(status.HTTP_200_OK, response.status_code)
         self.assertEqual(serializer_data, response.data)
-
-

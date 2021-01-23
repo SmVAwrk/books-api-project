@@ -6,7 +6,7 @@ User = get_user_model()
 
 
 class Books(models.Model):
-    """Модель книг, доступных в в бибилотеке"""
+    """Модель книг, доступных в в библиотеке"""
     title = models.CharField(verbose_name='Название', max_length=255, unique=True)
     description = models.TextField(verbose_name='Описание')
     author = models.ForeignKey('Authors', on_delete=models.CASCADE, verbose_name='Автор', related_name='aut_books')
@@ -85,7 +85,7 @@ class BookLibraryAvailable(models.Model):
 
 
 class UserBookSession(models.Model):
-    """Модель заявки пользовтаеля на сессию с книгами"""
+    """Модель заявки пользователя на сессию с книгами"""
     books = models.ManyToManyField(Books, verbose_name='Книги', blank=True, related_name='session_books')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
@@ -104,7 +104,7 @@ class UserBookSession(models.Model):
 
 
 class UserBookOffer(models.Model):
-    """Модель предложения книг в определенную бибилотеку"""
+    """Модель предложения книг в определенную библиотеку"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Пользователь')
     library = models.ForeignKey(Libraries, on_delete=models.CASCADE, verbose_name='Библиотека')
     quantity = models.PositiveSmallIntegerField(verbose_name='Кол-во книг')
